@@ -1,0 +1,6 @@
+[submodule "scan"]
+	path = scan
+	url = git@github.com:osint-services/scan
+[submodule "focus"]
+	path = focus
+	url = git@github.com:osint-services/focus
