@@ -1,6 +1,6 @@
 [submodule "scan"]
 	path = scan
-	url = git@github.com:osint-services/scan
+	url = git@github.com:osint-services/profile_checker
 [submodule "focus"]
 	path = focus
-	url = git@github.com:osint-services/focus
+	url = git@github.com:osint-services/profile_search
