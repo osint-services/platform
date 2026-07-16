@@ -47,6 +47,7 @@ git submodule update --init --recursive
 - `phone_search` requires `TWILIO_ACCOUNT_SID` and `TWILIO_AUTH_TOKEN` to be set.
 - Copy `.env.example` to `.env` and fill in the required values before starting Compose.
 - Each service now exposes a lightweight `/healthz` endpoint for smoke checks and container health probes.
+- The new [whoisit](whoisit) submodule is intended to act as the UI layer that consumes the platform services under the hood.
 
 ## Changelog
 
