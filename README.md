@@ -46,3 +46,11 @@ git submodule update --init --recursive
 - `profile_search` requires `TWEEPY_BEARER_TOKEN` to be available in the environment when running the Compose stack.
 - `phone_search` requires `TWILIO_ACCOUNT_SID` and `TWILIO_AUTH_TOKEN` to be set.
 - Copy `.env.example` to `.env` and fill in the required values before starting Compose.
+- Each service now exposes a lightweight `/healthz` endpoint for smoke checks and container health probes.
+
+## Recent improvements
+
+- Added health endpoints to the FastAPI services for basic liveness checks.
+- Parallelized profile checking requests to reduce scan latency across sites.
+- Removed the obsolete Compose `version` field to avoid startup warnings.
+- Added an initial test suite covering the health endpoints.
