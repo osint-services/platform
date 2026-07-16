@@ -10,3 +10,7 @@
 
 ## Documentation
 - Expanded the root README with notes about health checks and the recent hardening work.
+- Documented the new UI submodule and the bootstrap behavior that checks or starts the platform services.
+
+## Added
+- Added an Electron-based UI submodule, [whoisit](whoisit), that can probe the platform status and attempt to start the Docker-based stack when services are not yet reachable.

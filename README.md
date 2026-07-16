@@ -53,3 +53,12 @@ git submodule update --init --recursive
 
 - See [CHANGELOG.md](CHANGELOG.md) for the current release notes.
 - See [CHANGELOG-2026-07-16.md](CHANGELOG-2026-07-16.md) for the latest dated entry.
+
+## UI component
+
+The [whoisit](whoisit) submodule is now included as the Electron-based UI layer for the platform. It can:
+- probe the platform services over HTTP,
+- attempt to start the Docker-based platform stack when needed, and
+- call the scan, profile, and phone-lookup endpoints from the main UI.
+
+If you want to add a screenshot later, place a file such as [whoisit/docs/ui-screenshot.png](whoisit/docs/ui-screenshot.png) and reference it from this section.

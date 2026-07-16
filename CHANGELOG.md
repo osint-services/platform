@@ -14,3 +14,7 @@ All notable changes to this project will be documented in this file.
 
 ### Documentation
 - Updated the platform README to describe the new health checks and operational improvements.
+- Documented the new Electron UI submodule and its startup/bootstrap behavior.
+
+### Added
+- Added a new Electron-based UI submodule, [whoisit](whoisit), that can inspect the platform status and attempt to start the stack when needed.
