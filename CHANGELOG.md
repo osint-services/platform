@@ -18,6 +18,7 @@ All notable changes to this project will be documented in this file.
 - Added the dataset service to Docker Compose, nginx routing, persistent storage, and desktop readiness probes.
 - Increased the desktop window size and stopped opening DevTools in normal runs.
 - Kept stored provider secrets out of the renderer and applied credential changes through atomic, owner-only `.env` updates.
+- Fixed packaged Electron builds so they locate the parent platform configuration and report the real integration state.
 
 ### Documentation
 - Updated the platform, environment, desktop UI, dataset service, and organization profile documentation for the current architecture.
