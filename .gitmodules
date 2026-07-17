@@ -7,3 +7,6 @@
 [submodule "phone_search"]
 	path = phone_search
 	url = git@github.com:osint-services/phone_search
+[submodule "whoisit"]
+	path = whoisit
+	url = git@github.com:osint-services/whoisit.git
