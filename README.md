@@ -45,7 +45,7 @@ npm install
 npm start
 ```
 
-The UI checks service readiness on launch and can attempt to start the Compose stack when Docker is available. Packaged builds are created with `npm run package`.
+The UI checks service readiness on launch and can attempt to start the Compose stack when Docker is available. Its Integrations workspace shows the configured and reachable state for X/Tweepy, Twilio Lookup, and local datasets. Users can replace provider credentials there without exposing existing values to the renderer. Packaged builds are created with `npm run package`.
 
 ## Environment values
 

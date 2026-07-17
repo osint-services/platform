@@ -6,6 +6,7 @@
 - CSV, JSON, JSONL, and NDJSON parsing with automatic field suggestions and previews.
 - Per-row validation, rejected-row reporting, provenance, observation time, confidence, and raw source retention.
 - Search history and combined live/local results in the Electron application.
+- Integration status and credential management for X/Tweepy and Twilio Lookup.
 - Backend and renderer parser regression tests.
 
 ## Changed
@@ -14,6 +15,7 @@
 - Expanded profile and caller details and made source provenance visible throughout the UI.
 - Kept API failures scoped to their own source and search workflow.
 - Added dataset routing, persistence, and readiness checks to the deployed architecture.
+- Restricted saved provider credentials to the operating-system user and prevented existing secrets from being returned to the UI.
 
 ## Documentation
 
