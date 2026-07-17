@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 - Added CSV, JSON, JSONL, and NDJSON parsing, previews, automatic field suggestions, per-row validation, provenance, and raw-record retention.
 - Added combined live and imported-source searching, local search history, raw JSON inspection, and dataset management to the Electron UI.
 - Added an Integrations workspace for X/Tweepy, Twilio Lookup, and local dataset connection status with protected credential replacement.
+- Expanded username result cards with public validation evidence, direct profile links, dataset provenance, observation time, and confidence.
 - Expanded regression coverage for dataset import, fuzzy profile search, normalized phone search, deletion, health endpoints, and client-side parsers.
 
 ### Changed

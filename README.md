@@ -72,7 +72,7 @@ Do not commit `.env`. Imported datasets may contain sensitive or licensed inform
 | `GET /datasets/search/phones?phone_number=...` | Search imported phone records |
 | `DELETE /datasets/{dataset_id}` | Delete a dataset and its records |
 
-The import API accepts JSON rows after the UI parses CSV, JSON, JSONL, or NDJSON. A single import is limited to 10,000 records and the UI limits files to 10 MB. Canonical records preserve their source row, dataset provenance, observation time, and optional confidence score. Phone search uses normalized E.164 values; profile search supports exact or fuzzy matching.
+The import API accepts JSON rows after the UI parses CSV, JSON, JSONL, or NDJSON. A single import is limited to 10,000 records and the UI limits files to 10 MB. Canonical records preserve their source row, dataset provenance, observation time, and optional confidence score. Phone search uses normalized E.164 values; profile search supports exact or fuzzy matching. Username result cards also retain public validation evidence, profile links, dataset provenance, observation time, and confidence so searches remain informative when expanded X API inspection has no credits.
 
 ## Operations and tests
 

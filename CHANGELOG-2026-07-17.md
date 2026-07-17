@@ -7,6 +7,7 @@
 - Per-row validation, rejected-row reporting, provenance, observation time, confidence, and raw source retention.
 - Search history and combined live/local results in the Electron application.
 - Integration status and credential management for X/Tweepy and Twilio Lookup.
+- Rich username result cards that remain informative when paid X profile inspection is unavailable.
 - Backend and renderer parser regression tests.
 
 ## Changed
