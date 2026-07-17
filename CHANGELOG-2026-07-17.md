@@ -13,7 +13,8 @@
 
 ## Changed
 
-- Reorganized the desktop application into Username, Phone, Datasets, and History workspaces.
+- Unified username and phone lookup into a Search workspace with Auto, Profile, and Phone modes plus source filters that avoid unnecessary provider calls.
+- Reorganized the desktop application into Search, Datasets, Integrations, and History workspaces.
 - Expanded profile and caller details and made source provenance visible throughout the UI.
 - Kept API failures scoped to their own source and search workflow.
 - Added dataset routing, persistence, and readiness checks to the deployed architecture.

@@ -14,7 +14,8 @@ All notable changes to this project will be documented in this file.
 - Expanded regression coverage for dataset import, fuzzy profile search, normalized phone search, deletion, health endpoints, and client-side parsers.
 
 ### Changed
-- Reworked the Electron interface into cohesive Username, Phone, Datasets, and History workspaces with master/detail results.
+- Unified username and phone lookup into one Search workspace with conservative auto-detection, explicit Profile and Phone modes, and source filters that control which APIs and datasets are queried.
+- Reworked the Electron interface into cohesive Search, Datasets, Integrations, and History workspaces with type-specific master/detail results.
 - Isolated live-provider failures so other sources can still return results and errors remain in the correct search workspace.
 - Expanded profile and phone detail views with provider metadata, provenance, freshness, confidence, metrics, and raw source records.
 - Added the dataset service to Docker Compose, nginx routing, persistent storage, and desktop readiness probes.

@@ -15,7 +15,7 @@ nginx :80
   `-- /datasets*       -> dataset_service  (SQLite imports and local search)
 ```
 
-Docker Compose runs the four FastAPI services, nginx, and a persistent `dataset_data` volume. The Electron UI queries live and local sources independently and combines successful results, so one unavailable provider does not prevent other sources from being searched.
+Docker Compose runs the four FastAPI services, nginx, and a persistent `dataset_data` volume. The Electron UI provides one search workspace with Auto, Profile, and Phone modes plus All, Live APIs, and Imported datasets source filters. It queries enabled sources independently and combines successful results, so one unavailable provider does not prevent other sources from being searched.
 
 ## Requirements
 
