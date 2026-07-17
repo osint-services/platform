@@ -5,16 +5,18 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
-- Added lightweight `/healthz` endpoints to the FastAPI services for smoke checks and container health probes.
-- Added an initial regression test suite covering the new health endpoints.
+- Added a persistent SQLite dataset service for mapped profile and phone imports.
+- Added CSV, JSON, JSONL, and NDJSON parsing, previews, automatic field suggestions, per-row validation, provenance, and raw-record retention.
+- Added combined live and imported-source searching, local search history, raw JSON inspection, and dataset management to the Electron UI.
+- Expanded regression coverage for dataset import, fuzzy profile search, normalized phone search, deletion, health endpoints, and client-side parsers.
 
 ### Changed
-- Parallelized profile checker requests with bounded concurrency to reduce scan latency across site checks.
-- Removed the obsolete Compose `version` field from the deployment configuration to avoid startup warnings.
+- Reworked the Electron interface into cohesive Username, Phone, Datasets, and History workspaces with master/detail results.
+- Isolated live-provider failures so other sources can still return results and errors remain in the correct search workspace.
+- Expanded profile and phone detail views with provider metadata, provenance, freshness, confidence, metrics, and raw source records.
+- Added the dataset service to Docker Compose, nginx routing, persistent storage, and desktop readiness probes.
+- Increased the desktop window size and stopped opening DevTools in normal runs.
 
 ### Documentation
-- Updated the platform README to describe the new health checks and operational improvements.
-- Documented the new Electron UI submodule and its startup/bootstrap behavior.
-
-### Added
-- Added a new Electron-based UI submodule, [whoisit](whoisit), that can inspect the platform status and attempt to start the stack when needed.
+- Updated the platform, environment, desktop UI, dataset service, and organization profile documentation for the current architecture.
+- Added [2026-07-17 release notes](CHANGELOG-2026-07-17.md).

@@ -8,6 +8,7 @@ WORKDIR /app
 COPY ./profile_checker /app/profile_checker
 COPY ./profile_search /app/profile_search
 COPY ./phone_search /app/phone_search
+COPY ./dataset_service /app/dataset_service
 
 # Install the selected service dependencies
 ARG APP_DIR=profile_checker
