@@ -32,7 +32,21 @@ services:
     environment:
       - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
       - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
-    command: uvicorn server:app --host 0.0.0.0 --port 8000
+    command: uvicorn phone_search.server:app --host 0.0.0.0 --port 8000
+    networks:
+      - platform_net
+
+  dataset_service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        APP_DIR: dataset_service
+    environment:
+      - DATASET_DB_PATH=/data/datasets.db
+    command: uvicorn dataset_service.server:app --host 0.0.0.0 --port 8000
+    volumes:
+      - dataset_data:/data
     networks:
       - platform_net
 
@@ -42,6 +56,7 @@ services:
       - profile_checker
       - profile_search
       - phone_search
+      - dataset_service
     ports:
       - "80:80"
     volumes:
@@ -52,3 +67,6 @@ services:
 networks:
   platform_net:
     driver: bridge
+
+volumes:
+  dataset_data:
