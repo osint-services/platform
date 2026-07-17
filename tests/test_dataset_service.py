@@ -1,3 +1,5 @@
+import csv
+import json
 import sys
 from pathlib import Path
 
@@ -142,4 +144,55 @@ def test_phone_import_search_records_and_delete(tmp_path):
             "/datasets/search/phones", params={"phone_number": "+18135551212"}
         ).json()["records"]
         == []
+    )
+
+
+def test_documented_sample_files_import_and_search(tmp_path):
+    client = make_client(tmp_path)
+    samples = ROOT / "examples" / "datasets"
+
+    with (samples / "sample_profiles.csv").open(newline="", encoding="utf-8") as file:
+        profile_rows = list(csv.DictReader(file))
+    profile_import = client.post(
+        "/datasets/import",
+        json={
+            "name": "Fictional profile samples",
+            "record_type": "profile",
+            "filename": "sample_profiles.csv",
+            "rows": profile_rows,
+        },
+    )
+    assert profile_import.status_code == 201
+    assert profile_import.json()["imported"] == 4
+    assert profile_import.json()["rejected"] == 0
+
+    profiles = client.get(
+        "/datasets/search/profiles", params={"query": "demo_ada_1843"}
+    ).json()["records"]
+    assert len(profiles) == 1
+    assert profiles[0]["name"] == "Ada Example"
+    assert profiles[0]["metrics"]["followers_count"] == 12450
+
+    with (samples / "sample_phone_records.jsonl").open(encoding="utf-8") as file:
+        phone_rows = [json.loads(line) for line in file if line.strip()]
+    phone_import = client.post(
+        "/datasets/import",
+        json={
+            "name": "Fictional phone samples",
+            "record_type": "phone",
+            "filename": "sample_phone_records.jsonl",
+            "rows": phone_rows,
+        },
+    )
+    assert phone_import.status_code == 201
+    assert phone_import.json()["imported"] == 4
+    assert phone_import.json()["rejected"] == 0
+
+    phones = client.get(
+        "/datasets/search/phones", params={"phone_number": "+12025550104"}
+    ).json()["records"]
+    assert len(phones) == 1
+    assert phones[0]["valid"] is False
+    assert phones[0]["raw"]["case_note"].endswith(
+        "used to exercise false and null values."
     )

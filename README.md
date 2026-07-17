@@ -90,5 +90,7 @@ Liveness endpoints are available at `/scan/healthz`, `/phone_search/healthz`, an
 
 - [Desktop UI guide](whoisit/README.md)
 - [Dataset service guide](dataset_service/README.md)
+- [Sample profile dataset](examples/datasets/sample_profiles.csv)
+- [Sample phone dataset](examples/datasets/sample_phone_records.jsonl)
 - [Changelog](CHANGELOG.md)
 - [2026-07-17 release notes](CHANGELOG-2026-07-17.md)

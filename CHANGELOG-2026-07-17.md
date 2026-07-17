@@ -8,6 +8,7 @@
 - Search history and combined live/local results in the Electron application.
 - Integration status and credential management for X/Tweepy and Twilio Lookup.
 - Rich username result cards that remain informative when paid X profile inspection is unavailable.
+- Fictional sample profile and phone files for testing the dataset workflow without real personal data.
 - Backend and renderer parser regression tests.
 
 ## Changed

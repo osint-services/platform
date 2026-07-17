@@ -27,6 +27,15 @@ Compose stores `/data/datasets.db` in the named `dataset_data` volume. Deleting 
 
 The API is intentionally local and currently has no authentication layer. Do not expose the nginx proxy to an untrusted network without adding access control.
 
+## Sample data
+
+The platform repository includes two fictional datasets for exercising the complete import and search workflow:
+
+- [`examples/datasets/sample_profiles.csv`](../examples/datasets/sample_profiles.csv)
+- [`examples/datasets/sample_phone_records.jsonl`](../examples/datasets/sample_phone_records.jsonl)
+
+Import them from the desktop Datasets workspace. The canonical headers are auto-mapped. Search for `demo_ada_1843` or `grace_demo_1906` after importing the profile file, and `+12025550101` through `+12025550104` after importing the phone file. The phone values use the reserved North American `555-01xx` fictional range and do not identify real subscribers.
+
 ## Development
 
 ```bash

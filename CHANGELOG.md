@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 - Added combined live and imported-source searching, local search history, raw JSON inspection, and dataset management to the Electron UI.
 - Added an Integrations workspace for X/Tweepy, Twilio Lookup, and local dataset connection status with protected credential replacement.
 - Expanded username result cards with public validation evidence, direct profile links, dataset provenance, observation time, and confidence.
+- Added fictional profile CSV and phone JSONL datasets for testing imports, mapping, local search, and rich result rendering.
 - Expanded regression coverage for dataset import, fuzzy profile search, normalized phone search, deletion, health endpoints, and client-side parsers.
 
 ### Changed
