@@ -83,6 +83,54 @@ PHONE_SCHEMA = DatasetSchema(
     },
 )
 
+ENTITY_SCHEMA = DatasetSchema(
+    record_type=RecordType.entity,
+    identifier_fields=["username", "profile_url", "phone_number"],
+    fields=[
+        FieldDefinition(key="username", label="Username", description="Account handle, with or without @."),
+        FieldDefinition(key="platform", label="Platform", description="Network or site name, for example X or GitHub."),
+        FieldDefinition(key="profile_url", label="Profile URL", description="Canonical public profile URL; can identify a profile when username is absent."),
+        FieldDefinition(key="phone_number", label="Phone number", description="Number in E.164 format, for example +12025550101."),
+        FieldDefinition(key="display_name", label="Display name", description="Person, organization, or account name."),
+        FieldDefinition(key="bio", label="Bio", description="Source-provided identity or profile description."),
+        FieldDefinition(key="location", label="Location", description="Public or source-provided location."),
+        FieldDefinition(key="website", label="Website", description="Website associated with the entity or profile."),
+        FieldDefinition(key="verified", label="Verified", description="Boolean profile verification status."),
+        FieldDefinition(key="protected", label="Protected", description="Boolean protected/private profile status."),
+        FieldDefinition(key="created_at", label="Profile created at", description="Account creation timestamp."),
+        FieldDefinition(key="profile_image_url", label="Profile image URL", description="Avatar URL."),
+        FieldDefinition(key="profile_banner_url", label="Profile banner URL", description="Header/banner image URL."),
+        FieldDefinition(key="followers_count", label="Followers", description="Follower count."),
+        FieldDefinition(key="following_count", label="Following", description="Following count."),
+        FieldDefinition(key="post_count", label="Posts", description="Post or status count."),
+        FieldDefinition(key="listed_count", label="Listed", description="List membership count."),
+        FieldDefinition(key="like_count", label="Likes", description="Like or favorite count."),
+        FieldDefinition(key="media_count", label="Media", description="Media post count."),
+        FieldDefinition(key="valid", label="Phone valid", description="Boolean phone validity status."),
+        FieldDefinition(key="national_format", label="National phone format", description="Locally formatted phone number."),
+        FieldDefinition(key="country_code", label="Country code", description="ISO country code."),
+        FieldDefinition(key="caller_name", label="Caller name", description="Person or business caller name; used as the entity name when display name is absent."),
+        FieldDefinition(key="caller_type", label="Caller type", description="Caller-name classification."),
+        FieldDefinition(key="carrier_name", label="Carrier", description="Network carrier name."),
+        FieldDefinition(key="line_type", label="Line type", description="Mobile, landline, VoIP, or other classification."),
+        FieldDefinition(key="observed_at", label="Observed at", description="Timestamp when the source observed this record."),
+        FieldDefinition(key="confidence", label="Confidence", description="Optional confidence score from 0 to 1."),
+        FieldDefinition(key="source", label="Source", description="Original source name or URL."),
+    ],
+    sample={
+        "username": "demo_ada_1843",
+        "platform": "Example Network",
+        "profile_url": "https://profiles.example/demo_ada_1843",
+        "phone_number": "+12025550101",
+        "display_name": "Ada Example",
+        "carrier_name": "Example Wireless",
+        "line_type": "mobile",
+        "observed_at": "2026-07-17T12:00:00Z",
+        "confidence": 0.9,
+        "source": "Fictional research export",
+    },
+)
+
 
 def create_app(database_path: str | Path | None = None) -> FastAPI:
     fallback = Path(tempfile.gettempdir()) / "whoisit-datasets.db"
@@ -105,6 +153,8 @@ def create_app(database_path: str | Path | None = None) -> FastAPI:
 
     @app.get("/datasets/schema/{record_type}", response_model=DatasetSchema)
     def dataset_schema(record_type: RecordType) -> DatasetSchema:
+        if record_type is RecordType.entity:
+            return ENTITY_SCHEMA
         return PROFILE_SCHEMA if record_type is RecordType.profile else PHONE_SCHEMA
 
     @app.post(

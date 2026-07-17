@@ -12,7 +12,7 @@ nginx :80
   |-- /scan/*          -> profile_checker  (public username availability)
   |-- /focus*          -> profile_search   (X profile metadata via Tweepy)
   |-- /phone_search*   -> phone_search     (caller-name data via Twilio)
-  `-- /datasets*       -> dataset_service  (SQLite imports and local search)
+  `-- /datasets*       -> dataset_service  (SQLite entity imports and local search)
 ```
 
 Docker Compose runs the four FastAPI services, nginx, and a persistent `dataset_data` volume. The Electron UI provides one search workspace with Auto, Profile, and Phone modes plus All, Live APIs, and Imported datasets source filters. It queries enabled sources independently and combines successful results, so one unavailable provider does not prevent other sources from being searched.
@@ -66,13 +66,13 @@ Do not commit `.env`. Imported datasets may contain sensitive or licensed inform
 | `GET /focus?url=https://x.com/{username}` | Retrieve expanded X profile metadata |
 | `GET /phone_search?phone_number=+18135551212` | Retrieve live caller-name metadata |
 | `GET /datasets` | List imported datasets |
-| `GET /datasets/schema/{profile\|phone}` | Get canonical import fields and a sample |
-| `POST /datasets/import` | Import mapped profile or phone rows |
+| `GET /datasets/schema/entity` | Get the unified sparse entity schema and sample |
+| `POST /datasets/import` | Import mapped entities containing profile identifiers, phone identifiers, or both |
 | `GET /datasets/search/profiles?query=...&fuzzy=true` | Search imported profiles |
 | `GET /datasets/search/phones?phone_number=...` | Search imported phone records |
 | `DELETE /datasets/{dataset_id}` | Delete a dataset and its records |
 
-The import API accepts JSON rows after the UI parses CSV, JSON, JSONL, or NDJSON. A single import is limited to 10,000 records and the UI limits files to 10 MB. Canonical records preserve their source row, dataset provenance, observation time, and optional confidence score. Phone search uses normalized E.164 values; profile search supports exact or fuzzy matching. Username result cards also retain public validation evidence, profile links, dataset provenance, observation time, and confidence so searches remain informative when expanded X API inspection has no credits.
+The import API accepts sparse entity rows after the UI parses CSV, JSON, JSONL, or NDJSON. Each row needs at least one username, profile URL, or E.164 phone number; profile and phone fields can coexist and remain associated in search results. A single import is limited to 10,000 records and the UI limits files to 10 MB. Canonical records preserve their source row, dataset provenance, observation time, and optional confidence score. Legacy typed imports remain API-compatible and existing databases migrate in place.
 
 ## Operations and tests
 
@@ -90,6 +90,7 @@ Liveness endpoints are available at `/scan/healthz`, `/phone_search/healthz`, an
 
 - [Desktop UI guide](whoisit/README.md)
 - [Dataset service guide](dataset_service/README.md)
+- [Sample combined entity dataset](examples/datasets/sample_entities.csv)
 - [Sample profile dataset](examples/datasets/sample_profiles.csv)
 - [Sample phone dataset](examples/datasets/sample_phone_records.jsonl)
 - [Changelog](CHANGELOG.md)

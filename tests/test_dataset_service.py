@@ -20,10 +20,80 @@ def test_health_and_schema_are_available(tmp_path):
     client = make_client(tmp_path)
 
     assert client.get("/healthz").json() == {"status": "ok"}
-    schema = client.get("/datasets/schema/profile")
+    schema = client.get("/datasets/schema/entity")
     assert schema.status_code == 200
-    assert schema.json()["record_type"] == "profile"
+    assert schema.json()["record_type"] == "entity"
     assert any(field["key"] == "username" for field in schema.json()["fields"])
+    assert schema.json()["identifier_fields"] == [
+        "username",
+        "profile_url",
+        "phone_number",
+    ]
+
+
+def test_entity_import_accepts_sparse_and_combined_identifiers(tmp_path):
+    client = make_client(tmp_path)
+    response = client.post(
+        "/datasets/import",
+        json={
+            "name": "Combined identity export",
+            "filename": "identities.csv",
+            "mapping": {
+                "username": "handle",
+                "phone_number": "mobile",
+                "display_name": "name",
+                "platform": "network",
+                "carrier_name": "carrier",
+            },
+            "rows": [
+                {
+                    "handle": "@combined_demo",
+                    "mobile": "+1 (202) 555-0101",
+                    "name": "Combined Demo",
+                    "network": "ExampleNet",
+                    "carrier": "Example Wireless",
+                },
+                {
+                    "handle": "",
+                    "mobile": "+12025550102",
+                    "name": "Phone Only Demo",
+                    "carrier": "Example Fiber",
+                },
+                {"handle": "", "mobile": "", "name": "No identifier"},
+            ],
+        },
+    )
+
+    assert response.status_code == 201
+    result = response.json()
+    assert result["imported"] == 2
+    assert result["rejected"] == 1
+    assert result["profile_identifiers"] == 1
+    assert result["phone_identifiers"] == 2
+    assert "username, profile_url, or phone_number" in result["rejected_rows"][0]["reason"]
+
+    profile = client.get(
+        "/datasets/search/profiles", params={"query": "combined_demo"}
+    ).json()["records"][0]
+    assert profile["name"] == "Combined Demo"
+    assert profile["entity"]["phone_numbers"][0]["phone_number"] == "+12025550101"
+
+    phone = client.get(
+        "/datasets/search/phones", params={"phone_number": "+12025550101"}
+    ).json()["records"][0]
+    assert phone["caller_name"] == "Combined Demo"
+    assert phone["entity"]["profiles"][0]["username"] == "combined_demo"
+
+    phone_only = client.get(
+        "/datasets/search/phones", params={"phone_number": "+12025550102"}
+    ).json()["records"][0]
+    assert phone_only["entity"]["profiles"] == []
+
+    datasets = client.get("/datasets").json()
+    assert datasets[0]["record_type"] == "entity"
+    records = client.get(f"/datasets/{result['dataset_id']}/records").json()
+    assert records["record_type"] == "entity"
+    assert len(records["records"]) == 2
 
 
 def test_profile_import_preserves_provenance_and_supports_fuzzy_search(tmp_path):
@@ -151,6 +221,30 @@ def test_documented_sample_files_import_and_search(tmp_path):
     client = make_client(tmp_path)
     samples = ROOT / "examples" / "datasets"
 
+    with (samples / "sample_entities.csv").open(newline="", encoding="utf-8") as file:
+        entity_rows = list(csv.DictReader(file))
+    entity_import = client.post(
+        "/datasets/import",
+        json={
+            "name": "Fictional entity samples",
+            "filename": "sample_entities.csv",
+            "rows": entity_rows,
+        },
+    )
+    assert entity_import.status_code == 201
+    assert entity_import.json()["imported"] == 3
+    assert entity_import.json()["profile_identifiers"] == 2
+    assert entity_import.json()["phone_identifiers"] == 2
+    combined = client.get(
+        "/datasets/search/profiles", params={"query": "demo_ada_1843"}
+    ).json()["records"]
+    assert any(
+        record.get("entity", {}).get("phone_numbers", [{}])[0].get("phone_number")
+        == "+12025550101"
+        for record in combined
+        if record.get("entity", {}).get("phone_numbers")
+    )
+
     with (samples / "sample_profiles.csv").open(newline="", encoding="utf-8") as file:
         profile_rows = list(csv.DictReader(file))
     profile_import = client.post(
@@ -169,7 +263,7 @@ def test_documented_sample_files_import_and_search(tmp_path):
     profiles = client.get(
         "/datasets/search/profiles", params={"query": "demo_ada_1843"}
     ).json()["records"]
-    assert len(profiles) == 1
+    assert len(profiles) == 2
     assert profiles[0]["name"] == "Ada Example"
     assert profiles[0]["metrics"]["followers_count"] == 12450
 

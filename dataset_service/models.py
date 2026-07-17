@@ -5,13 +5,14 @@ from pydantic import BaseModel, Field
 
 
 class RecordType(str, Enum):
+    entity = "entity"
     profile = "profile"
     phone = "phone"
 
 
 class DatasetImportRequest(BaseModel):
     name: str = Field(min_length=1, max_length=120)
-    record_type: RecordType
+    record_type: RecordType = RecordType.entity
     filename: str | None = Field(default=None, max_length=255)
     mapping: dict[str, str] = Field(default_factory=dict)
     rows: list[dict[str, Any]] = Field(min_items=1, max_items=10_000)
@@ -27,6 +28,8 @@ class DatasetImportResult(BaseModel):
     imported: int
     rejected: int
     rejected_rows: list[RejectedRow]
+    profile_identifiers: int = 0
+    phone_identifiers: int = 0
 
 
 class DatasetSummary(BaseModel):
@@ -50,3 +53,4 @@ class DatasetSchema(BaseModel):
     record_type: RecordType
     fields: list[FieldDefinition]
     sample: dict[str, Any]
+    identifier_fields: list[str] = Field(default_factory=list)

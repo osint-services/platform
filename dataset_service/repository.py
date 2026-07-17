@@ -49,6 +49,88 @@ PHONE_FIELDS = (
     "source",
 )
 
+ENTITY_FIELDS = tuple(dict.fromkeys(PROFILE_FIELDS + PHONE_FIELDS))
+
+SCHEMA_SQL = """
+CREATE TABLE IF NOT EXISTS datasets (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    record_type TEXT NOT NULL CHECK(record_type IN ('entity', 'profile', 'phone')),
+    filename TEXT,
+    imported_at TEXT NOT NULL,
+    row_count INTEGER NOT NULL,
+    rejected_count INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS entities (
+    id TEXT PRIMARY KEY,
+    dataset_id TEXT NOT NULL REFERENCES datasets(id) ON DELETE CASCADE,
+    display_name TEXT,
+    bio TEXT,
+    location TEXT,
+    website TEXT,
+    observed_at TEXT,
+    confidence REAL,
+    source TEXT,
+    raw_json TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS profile_records (
+    id TEXT PRIMARY KEY,
+    dataset_id TEXT NOT NULL REFERENCES datasets(id) ON DELETE CASCADE,
+    entity_id TEXT REFERENCES entities(id) ON DELETE CASCADE,
+    platform TEXT,
+    username TEXT,
+    username_normalized TEXT,
+    profile_url TEXT,
+    display_name TEXT,
+    bio TEXT,
+    location TEXT,
+    website TEXT,
+    verified INTEGER,
+    protected INTEGER,
+    created_at TEXT,
+    profile_image_url TEXT,
+    profile_banner_url TEXT,
+    followers_count INTEGER,
+    following_count INTEGER,
+    post_count INTEGER,
+    listed_count INTEGER,
+    like_count INTEGER,
+    media_count INTEGER,
+    observed_at TEXT,
+    confidence REAL,
+    source TEXT,
+    raw_json TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS phone_records (
+    id TEXT PRIMARY KEY,
+    dataset_id TEXT NOT NULL REFERENCES datasets(id) ON DELETE CASCADE,
+    entity_id TEXT REFERENCES entities(id) ON DELETE CASCADE,
+    phone_number TEXT NOT NULL,
+    valid INTEGER,
+    national_format TEXT,
+    country_code TEXT,
+    caller_name TEXT,
+    caller_type TEXT,
+    carrier_name TEXT,
+    line_type TEXT,
+    location TEXT,
+    observed_at TEXT,
+    confidence REAL,
+    source TEXT,
+    raw_json TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_entity_dataset ON entities(dataset_id);
+CREATE INDEX IF NOT EXISTS idx_profile_username ON profile_records(username_normalized);
+CREATE INDEX IF NOT EXISTS idx_profile_entity ON profile_records(entity_id);
+CREATE INDEX IF NOT EXISTS idx_profile_display_name ON profile_records(display_name);
+CREATE INDEX IF NOT EXISTS idx_phone_number ON phone_records(phone_number);
+CREATE INDEX IF NOT EXISTS idx_phone_entity ON phone_records(entity_id);
+"""
+
 
 def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -130,72 +212,70 @@ class DatasetRepository:
 
     def initialize(self) -> None:
         with self.connect() as connection:
-            connection.executescript(
-                """
-                CREATE TABLE IF NOT EXISTS datasets (
-                    id TEXT PRIMARY KEY,
-                    name TEXT NOT NULL,
-                    record_type TEXT NOT NULL CHECK(record_type IN ('profile', 'phone')),
-                    filename TEXT,
-                    imported_at TEXT NOT NULL,
-                    row_count INTEGER NOT NULL,
-                    rejected_count INTEGER NOT NULL
-                );
+            datasets_sql = connection.execute(
+                "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'datasets'"
+            ).fetchone()
+            profile_columns = {
+                row["name"]
+                for row in connection.execute("PRAGMA table_info(profile_records)")
+            }
+            if datasets_sql and (
+                "'entity'" not in datasets_sql["sql"] or "entity_id" not in profile_columns
+            ):
+                self.migrate_legacy_schema(connection)
+            else:
+                connection.executescript(SCHEMA_SQL)
 
-                CREATE TABLE IF NOT EXISTS profile_records (
-                    id TEXT PRIMARY KEY,
-                    dataset_id TEXT NOT NULL REFERENCES datasets(id) ON DELETE CASCADE,
-                    platform TEXT,
-                    username TEXT,
-                    username_normalized TEXT,
-                    profile_url TEXT,
-                    display_name TEXT,
-                    bio TEXT,
-                    location TEXT,
-                    website TEXT,
-                    verified INTEGER,
-                    protected INTEGER,
-                    created_at TEXT,
-                    profile_image_url TEXT,
-                    profile_banner_url TEXT,
-                    followers_count INTEGER,
-                    following_count INTEGER,
-                    post_count INTEGER,
-                    listed_count INTEGER,
-                    like_count INTEGER,
-                    media_count INTEGER,
-                    observed_at TEXT,
-                    confidence REAL,
-                    source TEXT,
-                    raw_json TEXT NOT NULL
-                );
+    @staticmethod
+    def migrate_legacy_schema(connection: sqlite3.Connection) -> None:
+        connection.execute("PRAGMA foreign_keys = OFF")
+        connection.executescript(
+            """
+            ALTER TABLE datasets RENAME TO legacy_datasets;
+            ALTER TABLE profile_records RENAME TO legacy_profile_records;
+            ALTER TABLE phone_records RENAME TO legacy_phone_records;
+            """
+        )
+        connection.executescript(SCHEMA_SQL)
+        connection.executescript(
+            """
+            INSERT INTO datasets
+                (id, name, record_type, filename, imported_at, row_count, rejected_count)
+            SELECT id, name, record_type, filename, imported_at, row_count, rejected_count
+            FROM legacy_datasets;
 
-                CREATE TABLE IF NOT EXISTS phone_records (
-                    id TEXT PRIMARY KEY,
-                    dataset_id TEXT NOT NULL REFERENCES datasets(id) ON DELETE CASCADE,
-                    phone_number TEXT NOT NULL,
-                    valid INTEGER,
-                    national_format TEXT,
-                    country_code TEXT,
-                    caller_name TEXT,
-                    caller_type TEXT,
-                    carrier_name TEXT,
-                    line_type TEXT,
-                    location TEXT,
-                    observed_at TEXT,
-                    confidence REAL,
-                    source TEXT,
-                    raw_json TEXT NOT NULL
-                );
-
-                CREATE INDEX IF NOT EXISTS idx_profile_username
-                    ON profile_records(username_normalized);
-                CREATE INDEX IF NOT EXISTS idx_profile_display_name
-                    ON profile_records(display_name);
-                CREATE INDEX IF NOT EXISTS idx_phone_number
-                    ON phone_records(phone_number);
-                """
+            INSERT INTO profile_records (
+                id, dataset_id, entity_id, platform, username, username_normalized,
+                profile_url, display_name, bio, location, website, verified,
+                protected, created_at, profile_image_url, profile_banner_url,
+                followers_count, following_count, post_count, listed_count,
+                like_count, media_count, observed_at, confidence, source, raw_json
             )
+            SELECT
+                id, dataset_id, NULL, platform, username, username_normalized,
+                profile_url, display_name, bio, location, website, verified,
+                protected, created_at, profile_image_url, profile_banner_url,
+                followers_count, following_count, post_count, listed_count,
+                like_count, media_count, observed_at, confidence, source, raw_json
+            FROM legacy_profile_records;
+
+            INSERT INTO phone_records (
+                id, dataset_id, entity_id, phone_number, valid, national_format,
+                country_code, caller_name, caller_type, carrier_name,
+                line_type, location, observed_at, confidence, source, raw_json
+            )
+            SELECT
+                id, dataset_id, NULL, phone_number, valid, national_format,
+                country_code, caller_name, caller_type, carrier_name,
+                line_type, location, observed_at, confidence, source, raw_json
+            FROM legacy_phone_records;
+
+            DROP TABLE legacy_profile_records;
+            DROP TABLE legacy_phone_records;
+            DROP TABLE legacy_datasets;
+            """
+        )
+        connection.executescript(SCHEMA_SQL)
 
     @staticmethod
     def mapped_row(
@@ -208,19 +288,32 @@ class DatasetRepository:
 
     def import_dataset(self, request: DatasetImportRequest) -> DatasetImportResult:
         dataset_id = str(uuid4())
-        accepted: list[dict[str, Any]] = []
+        entities: list[dict[str, Any]] = []
+        profiles: list[dict[str, Any]] = []
+        phones: list[dict[str, Any]] = []
         rejected: list[RejectedRow] = []
+        imported = 0
 
         for row_number, raw_row in enumerate(request.rows, start=1):
             try:
-                if request.record_type.value == "profile":
-                    accepted.append(
+                if request.record_type.value == "entity":
+                    entity, profile, phone = self.prepare_entity(
+                        raw_row, request.mapping, request.name
+                    )
+                    entities.append(entity)
+                    if profile:
+                        profiles.append(profile)
+                    if phone:
+                        phones.append(phone)
+                elif request.record_type.value == "profile":
+                    profiles.append(
                         self.prepare_profile(raw_row, request.mapping, request.name)
                     )
                 else:
-                    accepted.append(
+                    phones.append(
                         self.prepare_phone(raw_row, request.mapping, request.name)
                     )
+                imported += 1
             except (TypeError, ValueError) as exc:
                 rejected.append(RejectedRow(row_number=row_number, reason=str(exc)))
 
@@ -238,52 +331,115 @@ class DatasetRepository:
                     request.record_type.value,
                     request.filename,
                     imported_at,
-                    len(accepted),
+                    imported,
                     len(rejected),
                 ),
             )
 
-            if request.record_type.value == "profile":
+            if entities:
+                connection.executemany(
+                    """
+                    INSERT INTO entities (
+                        id, dataset_id, display_name, bio, location, website,
+                        observed_at, confidence, source, raw_json
+                    ) VALUES (
+                        :id, :dataset_id, :display_name, :bio, :location, :website,
+                        :observed_at, :confidence, :source, :raw_json
+                    )
+                    """,
+                    [dict(record, dataset_id=dataset_id) for record in entities],
+                )
+            if profiles:
                 connection.executemany(
                     """
                     INSERT INTO profile_records (
-                        id, dataset_id, platform, username, username_normalized,
+                        id, dataset_id, entity_id, platform, username, username_normalized,
                         profile_url, display_name, bio, location, website, verified,
                         protected, created_at, profile_image_url, profile_banner_url,
                         followers_count, following_count, post_count, listed_count,
                         like_count, media_count, observed_at, confidence, source, raw_json
                     ) VALUES (
-                        :id, :dataset_id, :platform, :username, :username_normalized,
+                        :id, :dataset_id, :entity_id, :platform, :username, :username_normalized,
                         :profile_url, :display_name, :bio, :location, :website, :verified,
                         :protected, :created_at, :profile_image_url, :profile_banner_url,
                         :followers_count, :following_count, :post_count, :listed_count,
                         :like_count, :media_count, :observed_at, :confidence, :source, :raw_json
                     )
                     """,
-                    [dict(record, dataset_id=dataset_id) for record in accepted],
+                    [
+                        dict(record, dataset_id=dataset_id, entity_id=record.get("entity_id"))
+                        for record in profiles
+                    ],
                 )
-            else:
+            if phones:
                 connection.executemany(
                     """
                     INSERT INTO phone_records (
-                        id, dataset_id, phone_number, valid, national_format,
+                        id, dataset_id, entity_id, phone_number, valid, national_format,
                         country_code, caller_name, caller_type, carrier_name,
                         line_type, location, observed_at, confidence, source, raw_json
                     ) VALUES (
-                        :id, :dataset_id, :phone_number, :valid, :national_format,
+                        :id, :dataset_id, :entity_id, :phone_number, :valid, :national_format,
                         :country_code, :caller_name, :caller_type, :carrier_name,
                         :line_type, :location, :observed_at, :confidence, :source, :raw_json
                     )
                     """,
-                    [dict(record, dataset_id=dataset_id) for record in accepted],
+                    [
+                        dict(record, dataset_id=dataset_id, entity_id=record.get("entity_id"))
+                        for record in phones
+                    ],
                 )
 
         return DatasetImportResult(
             dataset_id=dataset_id,
-            imported=len(accepted),
+            imported=imported,
             rejected=len(rejected),
             rejected_rows=rejected[:100],
+            profile_identifiers=len(profiles),
+            phone_identifiers=len(phones),
         )
+
+    def prepare_entity(
+        self, raw_row: dict[str, Any], mapping: dict[str, str], dataset_name: str
+    ) -> tuple[dict[str, Any], dict[str, Any] | None, dict[str, Any] | None]:
+        values = self.mapped_row(raw_row, mapping, ENTITY_FIELDS)
+        has_profile = bool(
+            normalize_username(values["username"]) or username_from_url(values["profile_url"])
+        )
+        has_phone = bool(clean_text(values["phone_number"]))
+        if not has_profile and not has_phone:
+            raise ValueError("username, profile_url, or phone_number is required")
+
+        entity_id = str(uuid4())
+        observed_at = clean_text(values["observed_at"]) or utc_now()
+        confidence = parse_confidence(values["confidence"])
+        source = clean_text(values["source"]) or dataset_name
+        display_name = clean_text(values["display_name"]) or clean_text(
+            values["caller_name"]
+        )
+        entity = {
+            "id": entity_id,
+            "display_name": display_name,
+            "bio": clean_text(values["bio"]),
+            "location": clean_text(values["location"]),
+            "website": clean_text(values["website"]),
+            "observed_at": observed_at,
+            "confidence": confidence,
+            "source": source,
+            "raw_json": json.dumps(raw_row, default=str),
+        }
+
+        profile = (
+            self.prepare_profile(raw_row, mapping, dataset_name) if has_profile else None
+        )
+        phone = self.prepare_phone(raw_row, mapping, dataset_name) if has_phone else None
+        if profile:
+            profile["entity_id"] = entity_id
+            profile["display_name"] = profile["display_name"] or display_name
+        if phone:
+            phone["entity_id"] = entity_id
+            phone["caller_name"] = phone["caller_name"] or display_name
+        return entity, profile, phone
 
     def prepare_profile(
         self, raw_row: dict[str, Any], mapping: dict[str, str], dataset_name: str
@@ -391,7 +547,13 @@ class DatasetRepository:
                     """,
                     (normalized,),
                 ).fetchall()
-        return [self.profile_response(row) for row in rows]
+            records = []
+            for row in rows:
+                record = self.profile_response(row)
+                if row["entity_id"]:
+                    record["entity"] = self.entity_summary(connection, row["entity_id"])
+                records.append(record)
+        return records
 
     def search_phones(self, phone_number: str) -> list[dict[str, Any]]:
         normalized = normalize_phone(phone_number)
@@ -407,7 +569,13 @@ class DatasetRepository:
                 """,
                 (normalized,),
             ).fetchall()
-        return [self.phone_response(row) for row in rows]
+            records = []
+            for row in rows:
+                record = self.phone_response(row)
+                if row["entity_id"]:
+                    record["entity"] = self.entity_summary(connection, row["entity_id"])
+                records.append(record)
+        return records
 
     def dataset_records(
         self, dataset_id: str, limit: int, offset: int
@@ -418,21 +586,98 @@ class DatasetRepository:
             ).fetchone()
             if not dataset:
                 return None
-            table = (
-                "profile_records"
-                if dataset["record_type"] == "profile"
-                else "phone_records"
-            )
+            if dataset["record_type"] == "entity":
+                rows = connection.execute(
+                    "SELECT * FROM entities WHERE dataset_id = ? LIMIT ? OFFSET ?",
+                    (dataset_id, limit, offset),
+                ).fetchall()
+                return "entity", [
+                    self.entity_response(connection, row) for row in rows
+                ]
+            table = "profile_records" if dataset["record_type"] == "profile" else "phone_records"
             rows = connection.execute(
                 f"SELECT * FROM {table} WHERE dataset_id = ? LIMIT ? OFFSET ?",
                 (dataset_id, limit, offset),
             ).fetchall()
-        return dataset["record_type"], [
-            self.profile_response(row)
-            if dataset["record_type"] == "profile"
-            else self.phone_response(row)
-            for row in rows
-        ]
+            records = []
+            for row in rows:
+                record = (
+                    self.profile_response(row)
+                    if dataset["record_type"] == "profile"
+                    else self.phone_response(row)
+                )
+                if row["entity_id"]:
+                    record["entity"] = self.entity_summary(connection, row["entity_id"])
+                records.append(record)
+        return dataset["record_type"], records
+
+    def entity_summary(
+        self, connection: sqlite3.Connection, entity_id: str
+    ) -> dict[str, Any] | None:
+        entity = connection.execute(
+            "SELECT * FROM entities WHERE id = ?", (entity_id,)
+        ).fetchone()
+        if not entity:
+            return None
+        profiles = connection.execute(
+            """
+            SELECT id, platform, username, profile_url
+            FROM profile_records
+            WHERE entity_id = ?
+            ORDER BY platform, username
+            """,
+            (entity_id,),
+        ).fetchall()
+        phones = connection.execute(
+            """
+            SELECT id, phone_number, caller_name, carrier_name, line_type
+            FROM phone_records
+            WHERE entity_id = ?
+            ORDER BY phone_number
+            """,
+            (entity_id,),
+        ).fetchall()
+        return {
+            "id": entity["id"],
+            "name": entity["display_name"],
+            "bio": entity["bio"],
+            "location": entity["location"],
+            "website": entity["website"],
+            "profiles": [
+                {
+                    "id": row["id"],
+                    "platform": row["platform"],
+                    "username": row["username"],
+                    "profile_uri": row["profile_url"],
+                }
+                for row in profiles
+            ],
+            "phone_numbers": [
+                {
+                    "id": row["id"],
+                    "phone_number": row["phone_number"],
+                    "caller_name": row["caller_name"],
+                    "carrier_name": row["carrier_name"],
+                    "line_type": row["line_type"],
+                }
+                for row in phones
+            ],
+        }
+
+    def entity_response(
+        self, connection: sqlite3.Connection, row: sqlite3.Row
+    ) -> dict[str, Any]:
+        summary = self.entity_summary(connection, row["id"]) or {}
+        return {
+            **summary,
+            "record_type": "entity",
+            "source_type": "dataset",
+            "dataset_id": row["dataset_id"],
+            "source": row["source"],
+            "observed_at": row["observed_at"],
+            "confidence": row["confidence"],
+            "raw": json.loads(row["raw_json"]),
+        }
 
     @staticmethod
     def profile_response(row: sqlite3.Row) -> dict[str, Any]:

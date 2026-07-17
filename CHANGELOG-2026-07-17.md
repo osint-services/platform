@@ -2,6 +2,7 @@
 
 ## Added
 
+- Sparse entities that can contain a profile identifier, a phone identifier, or both, with associations visible from either search.
 - Persistent SQLite-backed profile and phone datasets with mapped imports and local search.
 - CSV, JSON, JSONL, and NDJSON parsing with automatic field suggestions and previews.
 - Per-row validation, rejected-row reporting, provenance, observation time, confidence, and raw source retention.
@@ -13,6 +14,8 @@
 
 ## Changed
 
+- Replaced the desktop record-type selector with one entity ingestion and field-mapping pipeline.
+- Added an in-place SQLite schema migration while retaining legacy profile and phone import compatibility.
 - Unified username and phone lookup into a Search workspace with Auto, Profile, and Phone modes plus source filters that avoid unnecessary provider calls.
 - Reorganized the desktop application into Search, Datasets, Integrations, and History workspaces.
 - Expanded profile and caller details and made source provenance visible throughout the UI.

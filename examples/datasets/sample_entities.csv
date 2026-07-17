@@ -1,0 +1,4 @@
+username,platform,profile_url,phone_number,display_name,bio,location,website,verified,followers_count,valid,national_format,country_code,caller_name,caller_type,carrier_name,line_type,observed_at,confidence,source
+demo_ada_1843,DemoNet,https://profiles.example/demo_ada_1843,+12025550101,Ada Example,"A fictional combined profile and phone entity.",London,https://ada.example,true,12450,true,"(202) 555-0101",US,Ada Example Labs,BUSINESS,Example Wireless,mobile,2026-07-15T14:30:00Z,0.97,Fictional QA directory
+grace_demo_1906,CodeCommons,https://profiles.example/grace_demo_1906,,Grace Demo,"A fictional profile-only entity.",Arlington VA,https://grace.example,true,8830,,,,,,,,2026-07-16T10:15:00Z,0.94,Fictional QA directory
+,,,+12025550102,Phone Only Demo,,,,,,true,"(202) 555-0102",US,Phone Only Demo,CONSUMER,Example Fiber,landline,2026-07-16T11:00:00Z,0.88,Fictional QA directory

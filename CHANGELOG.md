@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- Added a sparse entity model that associates optional profile and phone identifiers while preserving their type-specific metadata.
 - Added a persistent SQLite dataset service for mapped profile and phone imports.
 - Added CSV, JSON, JSONL, and NDJSON parsing, previews, automatic field suggestions, per-row validation, provenance, and raw-record retention.
 - Added combined live and imported-source searching, local search history, raw JSON inspection, and dataset management to the Electron UI.
@@ -14,6 +15,7 @@ All notable changes to this project will be documented in this file.
 - Expanded regression coverage for dataset import, fuzzy profile search, normalized phone search, deletion, health endpoints, and client-side parsers.
 
 ### Changed
+- Replaced separate profile and phone dataset ingestion with one entity mapping pipeline; legacy API imports remain compatible and existing SQLite databases migrate in place.
 - Unified username and phone lookup into one Search workspace with conservative auto-detection, explicit Profile and Phone modes, and source filters that control which APIs and datasets are queried.
 - Reworked the Electron interface into cohesive Search, Datasets, Integrations, and History workspaces with type-specific master/detail results.
 - Isolated live-provider failures so other sources can still return results and errors remain in the correct search workspace.
