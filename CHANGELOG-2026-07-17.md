@@ -18,6 +18,7 @@
 - Restricted saved provider credentials to the operating-system user and prevented existing secrets from being returned to the UI.
 - Fixed platform-root discovery in packaged Electron layouts so integration settings use the correct `.env` file.
 - Mapped X API failures to explicit profile-inspection responses, including `402` for depleted credits and `429` for rate limits.
+- Made nginx resolve Compose service names at request time, preventing cross-service 404s after containers receive new IP addresses.
 
 ## Documentation
 

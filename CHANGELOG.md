@@ -20,6 +20,7 @@ All notable changes to this project will be documented in this file.
 - Kept stored provider secrets out of the renderer and applied credential changes through atomic, owner-only `.env` updates.
 - Fixed packaged Electron builds so they locate the parent platform configuration and report the real integration state.
 - Replaced opaque profile-inspection 500 errors with actionable X provider responses for depleted credits, rate limits, invalid access, and missing profiles.
+- Switched nginx service routing to Docker's runtime DNS resolver so container recreation cannot silently send requests to reassigned service IPs.
 
 ### Documentation
 - Updated the platform, environment, desktop UI, dataset service, and organization profile documentation for the current architecture.
