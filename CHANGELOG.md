@@ -17,9 +17,11 @@ All notable changes to this project will be documented in this file.
 - Expanded username result cards with public validation evidence, direct profile links, dataset provenance, observation time, and confidence.
 - Added fictional profile CSV and phone JSONL datasets for testing imports, mapping, local search, and rich result rendering.
 - Expanded regression coverage for dataset import, fuzzy profile search, normalized phone search, deletion, health endpoints, and client-side parsers.
+- Added search-result **Go to map** handoffs for records with explicit coordinates, including safe phone-to-associated-entity navigation.
 
 ### Changed
 - Routed the native whoisit Map workspace and standalone Social Mapping client through the same canonical `/map/search` API.
+- Coordinate handoffs now bypass text geocoding, center the Map workspace on the evidence, and select the matching record when available.
 - Switched public submodule URLs to HTTPS so recursive clones do not require organization SSH keys.
 - Replaced separate profile and phone dataset ingestion with one entity mapping pipeline; legacy API imports remain compatible and existing SQLite databases migrate in place.
 - Unified username and phone lookup into one Search workspace with conservative auto-detection, explicit Profile and Phone modes, and source filters that control which APIs and datasets are queried.

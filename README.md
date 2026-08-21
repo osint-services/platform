@@ -16,7 +16,9 @@ whoisit desktop app and standalone Social Mapping client
   `-- /map/*           -> social_mapping   (GeoJSON aggregation, X posts, origin geocoding)
 ```
 
-Docker Compose runs the five FastAPI services, nginx, a persistent `dataset_data` volume, and a separate durable `social_mapping_cache` volume. The map service queries datasets internally and can use the same X bearer-token configuration as profile search. `whoisit` calls `/map/search` natively; it does not embed the standalone client.
+Docker Compose runs the five FastAPI services, nginx, a persistent `dataset_data` volume, and a separate durable `social_mapping_cache` volume. The map service queries datasets internally and can use the same X bearer-token configuration as profile search. `whoisit` calls `/map/search` natively; it does not embed the standalone client. Search results backed by explicit coordinates include a **Go to map** action that opens the shared Map workspace at the evidence location.
+
+Phone results can use this handoff only through an explicitly geolocated associated entity. Free-text locations and phone metadata never create a map destination.
 
 ## Requirements and setup
 
