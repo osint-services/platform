@@ -1,4 +1,5 @@
 import json
+from math import asin, cos, radians, sin, sqrt
 import re
 import sqlite3
 from datetime import datetime, timezone
@@ -32,6 +33,10 @@ PROFILE_FIELDS = (
     "observed_at",
     "confidence",
     "source",
+    "latitude",
+    "longitude",
+    "location_accuracy",
+    "location_source",
 )
 
 PHONE_FIELDS = (
@@ -72,6 +77,10 @@ CREATE TABLE IF NOT EXISTS entities (
     observed_at TEXT,
     confidence REAL,
     source TEXT,
+    latitude REAL,
+    longitude REAL,
+    location_accuracy TEXT,
+    location_source TEXT,
     raw_json TEXT NOT NULL
 );
 
@@ -101,6 +110,10 @@ CREATE TABLE IF NOT EXISTS profile_records (
     observed_at TEXT,
     confidence REAL,
     source TEXT,
+    latitude REAL,
+    longitude REAL,
+    location_accuracy TEXT,
+    location_source TEXT,
     raw_json TEXT NOT NULL
 );
 
@@ -174,6 +187,31 @@ def parse_confidence(value: Any) -> float | None:
     return confidence
 
 
+def parse_coordinate_pair(latitude_value: Any, longitude_value: Any) -> tuple[float | None, float | None]:
+    has_latitude = latitude_value is not None and str(latitude_value).strip() != ""
+    has_longitude = longitude_value is not None and str(longitude_value).strip() != ""
+    if has_latitude != has_longitude:
+        raise ValueError("latitude and longitude must be provided together")
+    if not has_latitude:
+        return None, None
+    latitude = float(latitude_value)
+    longitude = float(longitude_value)
+    if not -90 <= latitude <= 90:
+        raise ValueError("latitude must be between -90 and 90")
+    if not -180 <= longitude <= 180:
+        raise ValueError("longitude must be between -180 and 180")
+    return latitude, longitude
+
+
+def haversine_miles(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    earth_radius_miles = 3958.7613
+    lat1_r, lon1_r, lat2_r, lon2_r = map(radians, (lat1, lon1, lat2, lon2))
+    dlat = lat2_r - lat1_r
+    dlon = lon2_r - lon1_r
+    value = sin(dlat / 2) ** 2 + cos(lat1_r) * cos(lat2_r) * sin(dlon / 2) ** 2
+    return 2 * earth_radius_miles * asin(sqrt(value))
+
+
 def normalize_username(value: Any) -> str | None:
     username = clean_text(value)
     return username.lstrip("@").lower() if username else None
@@ -225,6 +263,22 @@ class DatasetRepository:
                 self.migrate_legacy_schema(connection)
             else:
                 connection.executescript(SCHEMA_SQL)
+            self.ensure_geospatial_columns(connection)
+
+    @staticmethod
+    def ensure_geospatial_columns(connection: sqlite3.Connection) -> None:
+        for table in ("entities", "profile_records"):
+            columns = {row["name"] for row in connection.execute(f"PRAGMA table_info({table})")}
+            for name, column_type in (
+                ("latitude", "REAL"),
+                ("longitude", "REAL"),
+                ("location_accuracy", "TEXT"),
+                ("location_source", "TEXT"),
+            ):
+                if name not in columns:
+                    connection.execute(f"ALTER TABLE {table} ADD COLUMN {name} {column_type}")
+        connection.execute("CREATE INDEX IF NOT EXISTS idx_entity_coordinates ON entities(latitude, longitude)")
+        connection.execute("CREATE INDEX IF NOT EXISTS idx_profile_coordinates ON profile_records(latitude, longitude)")
 
     @staticmethod
     def migrate_legacy_schema(connection: sqlite3.Connection) -> None:
@@ -341,10 +395,12 @@ class DatasetRepository:
                     """
                     INSERT INTO entities (
                         id, dataset_id, display_name, bio, location, website,
-                        observed_at, confidence, source, raw_json
+                        observed_at, confidence, source, latitude, longitude,
+                        location_accuracy, location_source, raw_json
                     ) VALUES (
                         :id, :dataset_id, :display_name, :bio, :location, :website,
-                        :observed_at, :confidence, :source, :raw_json
+                        :observed_at, :confidence, :source, :latitude, :longitude,
+                        :location_accuracy, :location_source, :raw_json
                     )
                     """,
                     [dict(record, dataset_id=dataset_id) for record in entities],
@@ -357,13 +413,15 @@ class DatasetRepository:
                         profile_url, display_name, bio, location, website, verified,
                         protected, created_at, profile_image_url, profile_banner_url,
                         followers_count, following_count, post_count, listed_count,
-                        like_count, media_count, observed_at, confidence, source, raw_json
+                        like_count, media_count, observed_at, confidence, source,
+                        latitude, longitude, location_accuracy, location_source, raw_json
                     ) VALUES (
                         :id, :dataset_id, :entity_id, :platform, :username, :username_normalized,
                         :profile_url, :display_name, :bio, :location, :website, :verified,
                         :protected, :created_at, :profile_image_url, :profile_banner_url,
                         :followers_count, :following_count, :post_count, :listed_count,
-                        :like_count, :media_count, :observed_at, :confidence, :source, :raw_json
+                        :like_count, :media_count, :observed_at, :confidence, :source,
+                        :latitude, :longitude, :location_accuracy, :location_source, :raw_json
                     )
                     """,
                     [
@@ -411,6 +469,7 @@ class DatasetRepository:
             raise ValueError("username, profile_url, or phone_number is required")
 
         entity_id = str(uuid4())
+        latitude, longitude = parse_coordinate_pair(values["latitude"], values["longitude"])
         observed_at = clean_text(values["observed_at"]) or utc_now()
         confidence = parse_confidence(values["confidence"])
         source = clean_text(values["source"]) or dataset_name
@@ -426,6 +485,10 @@ class DatasetRepository:
             "observed_at": observed_at,
             "confidence": confidence,
             "source": source,
+            "latitude": latitude,
+            "longitude": longitude,
+            "location_accuracy": clean_text(values["location_accuracy"]),
+            "location_source": clean_text(values["location_source"]),
             "raw_json": json.dumps(raw_row, default=str),
         }
 
@@ -452,6 +515,7 @@ class DatasetRepository:
         if not username_normalized:
             raise ValueError("username or profile_url is required")
         username = username or username_normalized
+        latitude, longitude = parse_coordinate_pair(values["latitude"], values["longitude"])
 
         return {
             "id": str(uuid4()),
@@ -477,6 +541,10 @@ class DatasetRepository:
             "observed_at": clean_text(values["observed_at"]) or utc_now(),
             "confidence": parse_confidence(values["confidence"]),
             "source": clean_text(values["source"]) or dataset_name,
+            "latitude": latitude,
+            "longitude": longitude,
+            "location_accuracy": clean_text(values["location_accuracy"]),
+            "location_source": clean_text(values["location_source"]),
             "raw_json": json.dumps(raw_row, default=str),
         }
 
@@ -577,6 +645,156 @@ class DatasetRepository:
                 records.append(record)
         return records
 
+    def search_geo(
+        self,
+        *,
+        latitude: float,
+        longitude: float,
+        radius_miles: float,
+        query: str | None,
+        limit: int,
+    ) -> list[dict[str, Any]]:
+        parse_coordinate_pair(latitude, longitude)
+        if radius_miles <= 0 or radius_miles > 1000:
+            raise ValueError("radius_miles must be greater than 0 and no more than 1000")
+        latitude_delta = radius_miles / 69.0
+        longitude_scale = max(cos(radians(latitude)), 0.01)
+        longitude_delta = radius_miles / (69.172 * longitude_scale)
+        normalized_query = query.strip().casefold() if query and query.strip() else None
+
+        with self.connect() as connection:
+            entity_rows = connection.execute(
+                """
+                SELECT entities.*, datasets.name AS dataset_name
+                FROM entities
+                JOIN datasets ON datasets.id = entities.dataset_id
+                WHERE latitude BETWEEN ? AND ? AND longitude BETWEEN ? AND ?
+                """,
+                (
+                    latitude - latitude_delta,
+                    latitude + latitude_delta,
+                    longitude - longitude_delta,
+                    longitude + longitude_delta,
+                ),
+            ).fetchall()
+            profile_rows = connection.execute(
+                """
+                SELECT profile_records.*, datasets.name AS dataset_name
+                FROM profile_records
+                JOIN datasets ON datasets.id = profile_records.dataset_id
+                WHERE entity_id IS NULL
+                  AND latitude BETWEEN ? AND ? AND longitude BETWEEN ? AND ?
+                """,
+                (
+                    latitude - latitude_delta,
+                    latitude + latitude_delta,
+                    longitude - longitude_delta,
+                    longitude + longitude_delta,
+                ),
+            ).fetchall()
+
+            candidates: list[dict[str, Any]] = []
+            for row in entity_rows:
+                summary = self.entity_summary(connection, row["id"]) or {}
+                searchable = " ".join(
+                    str(value or "")
+                    for value in (row["display_name"], row["bio"], row["location"], row["source"])
+                ).casefold()
+                if normalized_query and normalized_query not in searchable:
+                    continue
+                distance = haversine_miles(latitude, longitude, row["latitude"], row["longitude"])
+                if distance > radius_miles:
+                    continue
+                candidates.append(
+                    self.geo_feature(
+                        feature_id=f"dataset:entity:{row['id']}",
+                        latitude=row["latitude"],
+                        longitude=row["longitude"],
+                        title=row["display_name"] or "Imported entity",
+                        text=row["bio"],
+                        record_type="entity",
+                        row=row,
+                        distance=distance,
+                        associated_profiles=summary.get("profiles", []),
+                        associated_phones=summary.get("phone_numbers", []),
+                    )
+                )
+
+            for row in profile_rows:
+                searchable = " ".join(
+                    str(value or "")
+                    for value in (row["username"], row["display_name"], row["bio"], row["location"], row["source"])
+                ).casefold()
+                if normalized_query and normalized_query not in searchable:
+                    continue
+                distance = haversine_miles(latitude, longitude, row["latitude"], row["longitude"])
+                if distance > radius_miles:
+                    continue
+                candidates.append(
+                    self.geo_feature(
+                        feature_id=f"dataset:profile:{row['id']}",
+                        latitude=row["latitude"],
+                        longitude=row["longitude"],
+                        title=row["display_name"] or f"@{row['username']}",
+                        text=row["bio"],
+                        record_type="profile",
+                        row=row,
+                        distance=distance,
+                        associated_profiles=[
+                            {
+                                "id": row["id"],
+                                "platform": row["platform"],
+                                "username": row["username"],
+                                "profile_uri": row["profile_url"],
+                            }
+                        ],
+                        associated_phones=[],
+                    )
+                )
+
+        candidates.sort(key=lambda item: item["properties"]["distance_miles"])
+        return candidates[:limit]
+
+    @staticmethod
+    def geo_feature(
+        *,
+        feature_id: str,
+        latitude: float,
+        longitude: float,
+        title: str,
+        text: str | None,
+        record_type: str,
+        row: sqlite3.Row,
+        distance: float,
+        associated_profiles: list[dict[str, Any]],
+        associated_phones: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        return {
+            "type": "Feature",
+            "id": feature_id,
+            "geometry": {"type": "Point", "coordinates": [longitude, latitude]},
+            "properties": {
+                "source": "datasets",
+                "record_type": record_type,
+                "title": title,
+                "text": text,
+                "location_accuracy": row["location_accuracy"] or "unknown",
+                "location_source": row["location_source"] or "dataset_import",
+                "confidence": row["confidence"],
+                "timestamp": row["observed_at"],
+                "distance_miles": round(distance, 3),
+                "associated_profiles": associated_profiles,
+                "associated_phones": associated_phones,
+                "provenance": {
+                    "provider": "platform_dataset",
+                    "dataset_id": row["dataset_id"],
+                    "dataset_name": row["dataset_name"],
+                    "record_id": row["id"],
+                    "record_source": row["source"],
+                },
+            },
+        }
+
     def dataset_records(
         self, dataset_id: str, limit: int, offset: int
     ) -> tuple[str, list[dict[str, Any]]] | None:
@@ -643,6 +861,10 @@ class DatasetRepository:
             "bio": entity["bio"],
             "location": entity["location"],
             "website": entity["website"],
+            "latitude": entity["latitude"],
+            "longitude": entity["longitude"],
+            "location_accuracy": entity["location_accuracy"],
+            "location_source": entity["location_source"],
             "profiles": [
                 {
                     "id": row["id"],
@@ -708,6 +930,10 @@ class DatasetRepository:
             "name": row["display_name"],
             "bio": row["bio"],
             "location": row["location"],
+            "latitude": row["latitude"],
+            "longitude": row["longitude"],
+            "location_accuracy": row["location_accuracy"],
+            "location_source": row["location_source"],
             "website": row["website"],
             "verified": (
                 bool(row["verified"]) if row["verified"] is not None else None

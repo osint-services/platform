@@ -15,7 +15,7 @@ class DatasetImportRequest(BaseModel):
     record_type: RecordType = RecordType.entity
     filename: str | None = Field(default=None, max_length=255)
     mapping: dict[str, str] = Field(default_factory=dict)
-    rows: list[dict[str, Any]] = Field(min_items=1, max_items=10_000)
+    rows: list[dict[str, Any]] = Field(min_length=1, max_length=10_000)
 
 
 class RejectedRow(BaseModel):
