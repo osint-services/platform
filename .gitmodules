@@ -1,12 +1,15 @@
 [submodule "profile_checker"]
 	path = profile_checker
-	url = git@github.com:osint-services/profile_checker
+	url = https://github.com/osint-services/profile_checker.git
 [submodule "profile_search"]
 	path = profile_search
-	url = git@github.com:osint-services/profile_search
+	url = https://github.com/osint-services/profile_search.git
 [submodule "phone_search"]
 	path = phone_search
-	url = git@github.com:osint-services/phone_search
+	url = https://github.com/osint-services/phone_search.git
 [submodule "whoisit"]
 	path = whoisit
-	url = git@github.com:osint-services/whoisit.git
+	url = https://github.com/osint-services/whoisit.git
+[submodule "social_mapping"]
+	path = social_mapping
+	url = https://github.com/osint-services/social_mapping.git

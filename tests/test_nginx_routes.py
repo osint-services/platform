@@ -13,6 +13,7 @@ def test_nginx_uses_docker_dns_for_runtime_service_resolution():
         "profile_search",
         "phone_search",
         "dataset_service",
+        "social_mapping",
     ):
         assert f"set ${service}_upstream {service}:8000;" in config
         assert f"proxy_pass http://${service}_upstream" in config
@@ -29,3 +30,5 @@ def test_nginx_keeps_health_and_application_routes_separate():
     assert "location /phone_search" in config
     assert "location = /datasets/healthz" in config
     assert "location /datasets" in config
+    assert "location /map/" in config
+    assert "location = /search/tweets" in config

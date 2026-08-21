@@ -1,5 +1,6 @@
 import csv
 import json
+import sqlite3
 import sys
 from pathlib import Path
 
@@ -9,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from dataset_service.repository import SCHEMA_SQL
 from dataset_service.server import create_app
 
 
@@ -29,6 +31,7 @@ def test_health_and_schema_are_available(tmp_path):
         "profile_url",
         "phone_number",
     ]
+    assert any(field["key"] == "latitude" for field in schema.json()["fields"])
 
 
 def test_entity_import_accepts_sparse_and_combined_identifiers(tmp_path):
@@ -290,3 +293,82 @@ def test_documented_sample_files_import_and_search(tmp_path):
     assert phones[0]["raw"]["case_note"].endswith(
         "used to exercise false and null values."
     )
+
+
+def test_geospatial_import_radius_query_and_associated_phone_metadata(tmp_path):
+    client = make_client(tmp_path)
+    with (ROOT / "examples" / "datasets" / "geospatial_entities.csv").open(newline="", encoding="utf-8") as file:
+        rows = list(csv.DictReader(file))
+    imported = client.post(
+        "/datasets/import",
+        json={"name": "Synthetic geospatial entities", "record_type": "entity", "rows": rows},
+    )
+    assert imported.status_code == 201
+    assert imported.json()["imported"] == 3
+
+    response = client.get(
+        "/datasets/search/geo",
+        params={"latitude": 51.5074, "longitude": -0.1278, "radius_miles": 5},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["type"] == "FeatureCollection"
+    assert len(payload["features"]) == 1
+    marker = payload["features"][0]
+    assert marker["geometry"]["coordinates"] == [-0.1278, 51.5074]
+    assert marker["properties"]["title"] == "London Map Demo"
+    assert marker["properties"]["location_accuracy"] == "exact"
+    assert marker["properties"]["provenance"]["dataset_name"] == "Synthetic geospatial entities"
+    assert marker["properties"]["associated_phones"][0]["phone_number"] == "+12025550111"
+
+    filtered = client.get(
+        "/datasets/search/geo",
+        params={"latitude": 51.5074, "longitude": -0.1278, "radius_miles": 5, "query": "missing"},
+    )
+    assert filtered.json()["features"] == []
+
+
+def test_invalid_coordinate_pairs_are_rejected(tmp_path):
+    client = make_client(tmp_path)
+    response = client.post(
+        "/datasets/import",
+        json={
+            "name": "Invalid coordinates",
+            "record_type": "entity",
+            "rows": [
+                {"username": "missing_longitude", "latitude": 20},
+                {"username": "bad_latitude", "latitude": 95, "longitude": 0},
+            ],
+        },
+    )
+    assert response.status_code == 201
+    assert response.json()["imported"] == 0
+    assert response.json()["rejected"] == 2
+    assert "provided together" in response.json()["rejected_rows"][0]["reason"]
+    assert "between -90 and 90" in response.json()["rejected_rows"][1]["reason"]
+
+
+def test_existing_database_receives_additive_geospatial_migration(tmp_path):
+    database = tmp_path / "existing.db"
+    legacy_schema = SCHEMA_SQL
+    for column in (
+        "    latitude REAL,\n",
+        "    longitude REAL,\n",
+        "    location_accuracy TEXT,\n",
+        "    location_source TEXT,\n",
+    ):
+        legacy_schema = legacy_schema.replace(column, "")
+    with sqlite3.connect(database) as connection:
+        connection.executescript(legacy_schema)
+        connection.execute(
+            "INSERT INTO datasets VALUES (?, ?, ?, ?, ?, ?, ?)",
+            ("existing", "Existing dataset", "profile", None, "2026-01-01T00:00:00Z", 0, 0),
+        )
+
+    client = TestClient(create_app(database))
+    assert client.get("/datasets").json()[0]["name"] == "Existing dataset"
+    with sqlite3.connect(database) as connection:
+        entity_columns = {row[1] for row in connection.execute("PRAGMA table_info(entities)")}
+        profile_columns = {row[1] for row in connection.execute("PRAGMA table_info(profile_records)")}
+    for columns in (entity_columns, profile_columns):
+        assert {"latitude", "longitude", "location_accuracy", "location_source"} <= columns

@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- Integrated `social_mapping` as a pinned submodule and Compose service with `/map/*` nginx routing, readiness checks, and persistent geocoder cache storage.
+- Added explicit geospatial dataset fields, additive migration, radius search, GeoJSON provenance, and associated phone metadata.
+- Added synthetic London, Arlington, and Portland entities plus credential-free import and end-to-end helper scripts.
+- Added a platform CI path that validates tests, Compose configuration, and the complete synthetic London map flow.
 - Added a sparse entity model that associates optional profile and phone identifiers while preserving their type-specific metadata.
 - Added a persistent SQLite dataset service for mapped profile and phone imports.
 - Added CSV, JSON, JSONL, and NDJSON parsing, previews, automatic field suggestions, per-row validation, provenance, and raw-record retention.
@@ -15,6 +19,8 @@ All notable changes to this project will be documented in this file.
 - Expanded regression coverage for dataset import, fuzzy profile search, normalized phone search, deletion, health endpoints, and client-side parsers.
 
 ### Changed
+- Routed the native whoisit Map workspace and standalone Social Mapping client through the same canonical `/map/search` API.
+- Switched public submodule URLs to HTTPS so recursive clones do not require organization SSH keys.
 - Replaced separate profile and phone dataset ingestion with one entity mapping pipeline; legacy API imports remain compatible and existing SQLite databases migrate in place.
 - Unified username and phone lookup into one Search workspace with conservative auto-detection, explicit Profile and Phone modes, and source filters that control which APIs and datasets are queried.
 - Reworked the Electron interface into cohesive Search, Datasets, Integrations, and History workspaces with type-specific master/detail results.

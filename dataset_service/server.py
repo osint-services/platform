@@ -25,6 +25,10 @@ PROFILE_SCHEMA = DatasetSchema(
         FieldDefinition(key="display_name", label="Display name", description="Human-readable account name."),
         FieldDefinition(key="bio", label="Bio", description="Public profile description."),
         FieldDefinition(key="location", label="Location", description="Public or source-provided location."),
+        FieldDefinition(key="latitude", label="Latitude", description="Explicit evidence latitude; must be paired with longitude."),
+        FieldDefinition(key="longitude", label="Longitude", description="Explicit evidence longitude; must be paired with latitude."),
+        FieldDefinition(key="location_accuracy", label="Location accuracy", description="Accuracy label such as exact, place, or approximate."),
+        FieldDefinition(key="location_source", label="Location source", description="Source or method that supplied the coordinate pair."),
         FieldDefinition(key="website", label="Website", description="Website associated with the account."),
         FieldDefinition(key="verified", label="Verified", description="Boolean verification status."),
         FieldDefinition(key="protected", label="Protected", description="Boolean protected/private status."),
@@ -94,6 +98,10 @@ ENTITY_SCHEMA = DatasetSchema(
         FieldDefinition(key="display_name", label="Display name", description="Person, organization, or account name."),
         FieldDefinition(key="bio", label="Bio", description="Source-provided identity or profile description."),
         FieldDefinition(key="location", label="Location", description="Public or source-provided location."),
+        FieldDefinition(key="latitude", label="Latitude", description="Explicit evidence latitude; must be paired with longitude."),
+        FieldDefinition(key="longitude", label="Longitude", description="Explicit evidence longitude; must be paired with latitude."),
+        FieldDefinition(key="location_accuracy", label="Location accuracy", description="Accuracy label such as exact, place, or approximate."),
+        FieldDefinition(key="location_source", label="Location source", description="Source or method that supplied the coordinate pair."),
         FieldDefinition(key="website", label="Website", description="Website associated with the entity or profile."),
         FieldDefinition(key="verified", label="Verified", description="Boolean profile verification status."),
         FieldDefinition(key="protected", label="Protected", description="Boolean protected/private profile status."),
@@ -123,6 +131,10 @@ ENTITY_SCHEMA = DatasetSchema(
         "profile_url": "https://profiles.example/demo_ada_1843",
         "phone_number": "+12025550101",
         "display_name": "Ada Example",
+        "latitude": 51.5074,
+        "longitude": -0.1278,
+        "location_accuracy": "exact",
+        "location_source": "source_export",
         "carrier_name": "Example Wireless",
         "line_type": "mobile",
         "observed_at": "2026-07-17T12:00:00Z",
@@ -210,6 +222,35 @@ def create_app(database_path: str | Path | None = None) -> FastAPI:
         except ValueError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
         return {"query": phone_number, "records": records}
+
+    @app.get("/datasets/search/geo")
+    def search_geo(
+        latitude: float = Query(ge=-90, le=90),
+        longitude: float = Query(ge=-180, le=180),
+        radius_miles: float = Query(default=25, gt=0, le=1000),
+        query: str | None = Query(default=None, max_length=512),
+        limit: int = Query(default=100, ge=1, le=500),
+    ) -> dict:
+        try:
+            features = repository.search_geo(
+                latitude=latitude,
+                longitude=longitude,
+                radius_miles=radius_miles,
+                query=query,
+                limit=limit,
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        return {
+            "type": "FeatureCollection",
+            "features": features,
+            "metadata": {
+                "origin": {"latitude": latitude, "longitude": longitude},
+                "radius_miles": radius_miles,
+                "query": query,
+                "limit": limit,
+            },
+        }
 
     return app
 
