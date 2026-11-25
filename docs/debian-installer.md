@@ -1,13 +1,15 @@
 # Install OSINT Services on Debian or Ubuntu
 
-The amd64 package includes Whoisit, the release's Compose configuration, and prebuilt images for the five backend services and nginx. Install Docker Engine and the [Compose v2 plugin](https://docs.docker.com/compose/install/linux/) first. Use a local Docker context and make sure the account that runs Whoisit can access the daemon. Both of these commands should work from that account without `sudo`.
+The amd64 package includes Whoisit, the release's Compose configuration, and prebuilt images for the five backend services and nginx. Install Docker Engine 28 or newer and the [Compose v2 or v5 plugin](https://docs.docker.com/compose/install/linux/) first. Use a local Docker context and make sure the account that runs Whoisit can access the daemon. Both of these commands should work from that account without `sudo`.
 
 ```sh
 docker info
 docker compose version
 ```
 
-Verify that the Compose version starts with `v2`. On Ubuntu 24.04, the distribution provides `docker.io` and `docker-compose-v2`. Sign out and back in after changing Docker group membership.
+Check the server version in `docker info`. Docker Engine releases before 28 can expose ports published to localhost to peers on the same network segment. Install [Docker Engine for Debian](https://docs.docker.com/engine/install/debian/) or [Docker Engine for Ubuntu](https://docs.docker.com/engine/install/ubuntu/) if your distribution packages ship an older engine. Sign out and back in after changing Docker group membership. [Docker port publishing](https://docs.docker.com/engine/network/port-publishing/)
+
+The v1.2.0 desktop package requires Compose v2. Support for v5 starts with the next package release.
 
 ## Install and launch
 
@@ -33,7 +35,7 @@ For a previous source-based installation, check the existing project with `docke
 
 ## Build and publish
 
-From the platform root, check out the intended release commit and initialize its pinned submodules. On an amd64 Linux build host, install Docker with Compose v2 and Buildx, Node.js 22, `fakeroot`, and `dpkg`. Run the build script from the platform root.
+From the platform root, check out the intended release commit and initialize its pinned submodules. On an amd64 Linux build host, install Docker Engine 28 or newer with Compose v2 or v5 and Buildx, Node.js 22.17 or newer, `fakeroot`, and `dpkg`. Run the build script from the platform root.
 
 ```sh
 git submodule update --init --recursive

@@ -4,22 +4,7 @@ The platform combines public-data services, user-supplied datasets, and evidence
 
 ## Install the current release
 
-1. Install Git, Docker, and Docker Compose v2. Clone the platform at v1.1.0 with its pinned submodules, then start the backend:
-
-   ```bash
-   git clone --branch v1.1.0 --recurse-submodules https://github.com/osint-services/platform.git
-   cd platform
-   cp .env.example .env
-   docker compose up --build -d
-   ```
-
-2. On Debian or Ubuntu x86-64, [download Whoisit v1.0.0](https://github.com/osint-services/whoisit/releases/download/v1.0.0/whoisit_1.0.0_amd64.deb), install it with `sudo apt install ./whoisit_1.0.0_amd64.deb`, and launch Whoisit. The desktop package connects to the running backend at `http://127.0.0.1:80`. Manage the Compose stack and its settings from the platform checkout.
-
-3. To use **Certificates**, set `CERTIFICATE_INVENTORY_DOMAINS` in the platform `.env` for domains whose ownership you have verified. Recreate the dataset service with `docker compose up -d dataset_service`. See the [certificate inventory setup guide](https://github.com/osint-services/platform/blob/v1.1.0/docs/certificate-inventory.md#using-the-inventory).
-
-## Debian and Ubuntu installer
-
-Install Whoisit and the prebuilt backend together with the [platform Debian package](docs/debian-installer.md). The guide covers Docker prerequisites, first launch, and upgrading a source-based installation.
+Download the unified Debian or Ubuntu x86-64 package from [Platform releases](https://github.com/osint-services/platform/releases/latest). It includes Whoisit and the prebuilt backend. Follow the [installer guide](docs/debian-installer.md) for prerequisites, first launch, certificate inventory settings, and upgrades.
 
 ## Architecture
 
@@ -53,7 +38,7 @@ The release checks use synthetic data. Passing them verifies the pinned desktop 
 
 ## Development setup
 
-- Docker with Compose v2
+- Docker Engine 28 or newer with Compose v2 or v5
 - Node.js 22 or newer to build the current desktop UI
 - Optional X bearer token for profile inspection and X map posts
 - Optional Twilio credentials for live phone lookup

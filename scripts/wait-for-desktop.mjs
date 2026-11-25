@@ -9,10 +9,19 @@ async function readStatus(debuggerUrl) {
         id: 1,
         method: 'Runtime.evaluate',
         params: {
-          expression: `({
-            status: document.querySelector('.MuiChip-label')?.textContent,
-            issue: document.querySelector('[role=alert]')?.textContent,
-          })`,
+          expression: `(async () => {
+            const status = document.querySelector('.MuiChip-label')?.textContent;
+            const issue = document.querySelector('[role=alert]')?.textContent;
+            if (status !== 'Services online') return { status, issue };
+            try {
+              const response = await fetch('http://127.0.0.1:80/datasets');
+              const datasets = response.ok && Array.isArray(await response.json());
+              return { status, datasets };
+            } catch (error) {
+              return { status, issue: error.message };
+            }
+          })()`,
+          awaitPromise: true,
           returnByValue: true,
         },
       })));
@@ -45,8 +54,11 @@ while (Date.now() < deadline) {
       break;
     }
     if (result?.status === 'Services online') {
-      console.log('Whoisit reported Services online.');
-      process.exit(0);
+      if (result.datasets) {
+        console.log('Whoisit reported Services online and the renderer reached the dataset API.');
+        process.exit(0);
+      }
+      issue = result.issue || 'The packaged renderer could not read the dataset API.';
     }
   } catch {
     // Electron may still be starting.

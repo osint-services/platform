@@ -34,3 +34,11 @@ def test_nginx_keeps_health_and_application_routes_separate():
     assert "location /datasets" in config
     assert "location /map/" in config
     assert "location = /search/tweets" in config
+    assert "proxy_pass http://$social_mapping_upstream/search/tweets$is_args$args;" in config
+
+
+def test_larger_request_limit_is_scoped_to_dataset_imports():
+    config = (ROOT / "nginx.conf").read_text(encoding="utf-8")
+    import_location = config.split("location = /datasets/import {", 1)[1].split("}", 1)[0]
+    assert "client_max_body_size 16m;" in import_location
+    assert config.count("client_max_body_size") == 1

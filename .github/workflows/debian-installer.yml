@@ -6,7 +6,21 @@ on:
     paths: ['.github/workflows/debian-installer.yml', 'CHANGELOG.md']
     tags: ['v*.*.*']
   pull_request:
-    paths: ['whoisit', 'phone_search']
+    paths:
+      - '.dockerignore'
+      - '.github/workflows/debian-installer.yml'
+      - 'Dockerfile'
+      - 'docker-compose.yml'
+      - 'nginx.conf'
+      - 'runtime-constraints.txt'
+      - 'dataset_service/**'
+      - 'examples/datasets/**'
+      - 'phone_search'
+      - 'profile_checker'
+      - 'profile_search'
+      - 'scripts/**'
+      - 'social_mapping'
+      - 'whoisit'
   workflow_dispatch:
     inputs:
       version:
@@ -29,7 +43,7 @@ jobs:
           REQUESTED_VERSION: ${{ inputs.version }}
         run: |
           if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then
-            version=1.2.0
+            version=1.2.1
           elif [[ "$GITHUB_REF" == refs/heads/main && "$GITHUB_EVENT_NAME" == push ]]; then
             version=1.2.0
             if gh release view "v$version" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
@@ -73,7 +87,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        mode: [fresh, upgrade]
+        include:
+          - mode: fresh
+            compose-version: v5.6.0
+          - mode: upgrade
+            compose-version: v2.40.3
     steps:
       - uses: actions/checkout@v4
         with:
@@ -81,6 +99,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - uses: docker/setup-compose-action@v2
+        with:
+          version: ${{ matrix.compose-version }}
       - uses: actions/download-artifact@v4
         with:
           name: linux-amd64-deb
@@ -121,4 +142,4 @@ jobs:
           gh release create "$tag" dist/whoisit_*.deb* \
             --repo "$GITHUB_REPOSITORY" "${target[@]}" \
             --title "Platform $tag" --generate-notes \
-            --notes "Debian/Ubuntu x86-64 installer. Requires a running local Docker daemon and Docker Compose v2. See the [installer guide](https://github.com/$GITHUB_REPOSITORY/blob/$tag/docs/debian-installer.md) for setup and upgrade steps."
+            --notes "Debian/Ubuntu x86-64 installer. Requires a running local Docker Engine 28 or newer and Docker Compose v2 or v5. See the [installer guide](https://github.com/$GITHUB_REPOSITORY/blob/$tag/docs/debian-installer.md) for setup and upgrade steps."
