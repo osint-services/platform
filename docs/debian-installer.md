@@ -33,11 +33,11 @@ For a previous source-based installation, check the existing project with `docke
 
 ## Build and publish
 
-From the platform root, check out the intended release commit and initialize its pinned submodules. On an amd64 Linux build host, install Docker with Compose v2, Node.js 22, `fakeroot`, and `dpkg`, then run:
+From the platform root, check out the intended release commit and initialize its pinned submodules. On an amd64 Linux build host, install Docker with Compose v2 and Buildx, Node.js 22, `fakeroot`, and `dpkg`, then run:
 
 ```sh
 git submodule update --init --recursive
 scripts/make-debian-installer.sh 1.2.0 dist
 ```
 
-Run the platform **Debian installer** workflow manually to build and smoke-test an artifact before tagging. A new platform tag such as `v1.2.0` builds and tests the package again, then publishes it and its checksum to platform releases. Use a new version for every published installer so Docker image references and Debian package versions advance together.
+The platform **Debian installer** workflow builds and smoke-tests an artifact when a PR updates the Whoisit or phone service pin. You can also run the workflow manually before tagging. A new platform tag such as `v1.2.0` builds and tests the package again, then publishes it and its checksum to platform releases. Use a new version for every published installer so Docker image references and Debian package versions advance together.

@@ -8,6 +8,7 @@ root=$(cd "$(dirname "$0")/.." && pwd)
 scratch=$(mktemp -d)
 export XDG_CONFIG_HOME="$scratch/config"
 export XDG_CACHE_HOME="$scratch/cache"
+unset TWEEPY_BEARER_TOKEN TWILIO_ACCOUNT_SID TWILIO_AUTH_TOKEN
 mkdir -p "$XDG_CONFIG_HOME" "$XDG_CACHE_HOME"
 
 app_pid=
@@ -62,6 +63,10 @@ compose=(docker compose --project-name platform --env-file "$settings" --file "$
 test "$("${compose[@]}" port proxy 80)" = '127.0.0.1:80'
 test "$(stat -c %a "$settings")" = 600
 docker image inspect "osint-services/dataset_service:$version" >/dev/null
+test "$(curl -sS -o "$scratch/phone-response.json" -w '%{http_code}' \
+  "$base/phone_search?phone_number=%2B12025550101")" = 503
+python3 -c 'import json, sys; assert json.load(sys.stdin)["detail"] == "Twilio Lookup is not configured."' \
+  < "$scratch/phone-response.json"
 
 if [[ "$mode" == upgrade ]]; then
   cmp "$settings" "$scratch/legacy.env"

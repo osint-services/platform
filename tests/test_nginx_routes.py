@@ -29,6 +29,7 @@ def test_nginx_keeps_health_and_application_routes_separate():
     assert "location /focus" in config
     assert "location = /phone_search/healthz" in config
     assert "location /phone_search" in config
+    assert "proxy_pass http://$phone_search_upstream/lookup/caller-name$is_args$args;" in config
     assert "location = /datasets/healthz" in config
     assert "location /datasets" in config
     assert "location /map/" in config

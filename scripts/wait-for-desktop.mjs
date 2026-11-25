@@ -9,7 +9,10 @@ async function readStatus(debuggerUrl) {
         id: 1,
         method: 'Runtime.evaluate',
         params: {
-          expression: "document.querySelector('.MuiChip-label')?.textContent ?? ''",
+          expression: `({
+            status: document.querySelector('.MuiChip-label')?.textContent,
+            issue: document.querySelector('[role=alert]')?.textContent,
+          })`,
           returnByValue: true,
         },
       })));
@@ -30,12 +33,18 @@ async function readStatus(debuggerUrl) {
 }
 
 const deadline = Date.now() + 240_000;
+let issue;
 while (Date.now() < deadline) {
   try {
     const response = await fetch('http://127.0.0.1:9222/json/list', { signal: AbortSignal.timeout(2000) });
     const pages = await response.json();
     const desktop = pages.find((page) => page.type === 'page' && page.url.startsWith('file:'));
-    if (desktop && await readStatus(desktop.webSocketDebuggerUrl) === 'Services online') {
+    const result = desktop && await readStatus(desktop.webSocketDebuggerUrl);
+    if (result?.status === 'Service issue') {
+      issue = result.issue;
+      break;
+    }
+    if (result?.status === 'Services online') {
       console.log('Whoisit reported Services online.');
       process.exit(0);
     }
@@ -44,4 +53,4 @@ while (Date.now() < deadline) {
   }
   await delay(1000);
 }
-throw new Error('Whoisit did not report Services online.');
+throw new Error(issue || 'Whoisit did not report Services online.');

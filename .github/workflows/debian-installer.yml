@@ -3,6 +3,8 @@ name: Platform Debian installer
 on:
   push:
     tags: ['v*.*.*']
+  pull_request:
+    paths: ['whoisit', 'phone_search']
   workflow_dispatch:
     inputs:
       version:
@@ -28,7 +30,11 @@ jobs:
         env:
           REQUESTED_VERSION: ${{ inputs.version }}
         run: |
-          version=${REQUESTED_VERSION:-${GITHUB_REF_NAME#v}}
+          if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then
+            version=1.2.0
+          else
+            version=${REQUESTED_VERSION:-${GITHUB_REF_NAME#v}}
+          fi
           scripts/make-debian-installer.sh "$version" dist
       - uses: actions/upload-artifact@v4
         with:
