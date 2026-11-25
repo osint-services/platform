@@ -1,0 +1,124 @@
+name: Platform Debian installer
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/debian-installer.yml', 'CHANGELOG.md']
+    tags: ['v*.*.*']
+  pull_request:
+    paths: ['whoisit', 'phone_search']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Package version (for example 1.2.0)
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.release.outputs.version }}
+    steps:
+      - name: Select the package version
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUESTED_VERSION: ${{ inputs.version }}
+        run: |
+          if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then
+            version=1.2.0
+          elif [[ "$GITHUB_REF" == refs/heads/main && "$GITHUB_EVENT_NAME" == push ]]; then
+            version=1.2.0
+            if gh release view "v$version" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+              exit 0
+            fi
+          else
+            version=${REQUESTED_VERSION:-${GITHUB_REF_NAME#v}}
+          fi
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo 'Expected a release version in MAJOR.MINOR.PATCH format.' >&2
+            exit 2
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        if: steps.release.outputs.version != ''
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        if: steps.release.outputs.version != ''
+        with:
+          node-version: '22'
+      - if: steps.release.outputs.version != ''
+        run: sudo apt-get update -qq && sudo apt-get install -y fakeroot
+      - name: Build the installer and backend images
+        if: steps.release.outputs.version != ''
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: scripts/make-debian-installer.sh "$VERSION" dist
+      - uses: actions/upload-artifact@v4
+        if: steps.release.outputs.version != ''
+        with:
+          name: linux-amd64-deb
+          path: dist/whoisit_*.deb*
+          if-no-files-found: error
+
+  install:
+    needs: package
+    if: needs.package.outputs.version != ''
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [fresh, upgrade]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          name: linux-amd64-deb
+          path: dist
+      - run: sudo apt-get update -qq && sudo apt-get install -y xvfb xauth
+      - name: Install and launch the package
+        env:
+          TEST_MODE: ${{ matrix.mode }}
+        run: |
+          (cd dist && sha256sum -c ./*.sha256)
+          scripts/test-debian-installer.sh dist/*.deb "$TEST_MODE"
+
+  publish:
+    if: github.event_name == 'push'
+    needs: [package, install]
+    concurrency: publish-platform-v${{ needs.package.outputs.version }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: linux-amd64-deb
+          path: dist
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.package.outputs.version }}
+        run: |
+          tag="v$VERSION"
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            exit 0
+          fi
+          if [[ "$GITHUB_REF_TYPE" == tag ]]; then
+            target=(--verify-tag)
+          else
+            target=(--target "$GITHUB_SHA")
+          fi
+          gh release create "$tag" dist/whoisit_*.deb* \
+            --repo "$GITHUB_REPOSITORY" "${target[@]}" \
+            --title "Platform $tag" --generate-notes \
+            --notes "Debian/Ubuntu x86-64 installer. Requires a running local Docker daemon and Docker Compose v2. See the [installer guide](https://github.com/$GITHUB_REPOSITORY/blob/$tag/docs/debian-installer.md) for setup and upgrade steps."

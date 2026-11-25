@@ -18,7 +18,7 @@ services:
       args:
         APP_DIR: profile_search
     environment:
-      - TWEEPY_BEARER_TOKEN=${TWEEPY_BEARER_TOKEN}
+      - TWEEPY_BEARER_TOKEN=${TWEEPY_BEARER_TOKEN:-}
     command: uvicorn profile_search.server:app --host 0.0.0.0 --port 8000
     networks:
       - platform_net
@@ -30,8 +30,8 @@ services:
       args:
         APP_DIR: phone_search
     environment:
-      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
-      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID:-}
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN:-}
     command: uvicorn phone_search.server:app --host 0.0.0.0 --port 8000
     networks:
       - platform_net

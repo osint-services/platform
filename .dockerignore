@@ -13,5 +13,7 @@ __pycache__
 *.swp
 .env
 .env.*
+**/.env
+**/.env.*
 .DS_Store
 *.log
