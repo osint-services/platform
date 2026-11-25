@@ -29,6 +29,8 @@ jobs:
       - run: docker compose config --quiet
 
   compose-e2e:
+    env:
+      CERTIFICATE_INVENTORY_DOMAINS: example.test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -45,6 +47,41 @@ jobs:
           done
           docker compose logs social_mapping dataset_service proxy
           exit 1
+      - name: Verify certificate inventory through the desktop gateway
+        run: |
+          python3 - <<'PY'
+          import json
+          from urllib.request import urlopen
+          root = 'http://127.0.0.1/datasets/certificate-inventory'
+          assert json.load(urlopen(root))['domains'] == ['example.test']
+          snapshot = json.load(urlopen(root + '/example.test'))
+          assert snapshot['last_outcome'] == 'never_refreshed'
+          assert snapshot['observations'] is None
+          PY
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci && npm test && npm run package
+        working-directory: whoisit
       - run: python3 scripts/test_social_mapping_e2e.py
       - if: always()
         run: docker compose down --volumes
+
+  release-v1-1-0:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [tests, compose-e2e]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency: publish-platform-v1-1-0
+    steps:
+      - uses: actions/checkout@v4
+      - name: Publish platform v1.1.0 once
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          if gh release view v1.1.0 >/dev/null 2>&1; then exit 0; fi
+          awk '/^## \[1\.1\.0\]/{found=1; next} found && /^## /{exit} found{print}' CHANGELOG.md > "$RUNNER_TEMP/release-notes.md"
+          test -s "$RUNNER_TEMP/release-notes.md"
+          gh release create v1.1.0 --target "$GITHUB_SHA" --title "Platform v1.1.0" --notes-file "$RUNNER_TEMP/release-notes.md"

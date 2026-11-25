@@ -26,6 +26,12 @@ Compose publishes nginx on `127.0.0.1:80`. The desktop client and local processe
 
 For remote deployments, place an authenticated TLS gateway in front of this listener, authorize dataset reads and mutations, and restrict direct access to the backing services. Merely publishing port 80 on all interfaces provides no access control.
 
+## Desktop certificate inventory
+
+Open **Certificates** in the pinned desktop app. Select a configured domain and refresh its snapshot. Each historical observation shows its source, wildcard status, validity, log and retrieval times. Paste known DNS names for an exact comparison within the current view. An empty success replaces the snapshot; a failed refresh retains the previous successful observations and displays a warning. See the [inventory contract and setup](docs/certificate-inventory.md#using-the-inventory) for domain configuration and API behavior.
+
+The release checks use synthetic data. Passing them verifies the pinned desktop build, gateway routes and snapshot behavior; it does not establish live crt.sh coverage or availability.
+
 ## Requirements and setup
 
 - Docker with Compose v2
