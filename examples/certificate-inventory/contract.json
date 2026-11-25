@@ -1,0 +1,42 @@
+{
+  "observation": {
+    "configured_domain": "example.test",
+    "name": "example.test",
+    "source": "synthetic",
+    "certificate_id": "fixture-1",
+    "not_before": "2026-01-01T00:00:00Z",
+    "not_after": "2026-04-01T00:00:00Z",
+    "logged_at": null,
+    "retrieved_at": "2026-02-01T12:00:00Z"
+  },
+  "cases": [
+    {
+      "input": "example.test",
+      "expected_name": "example.test"
+    },
+    {
+      "input": "APP.Example.Test.",
+      "expected_name": "app.example.test"
+    },
+    {
+      "input": "*.example.test",
+      "expected_name": "*.example.test"
+    },
+    {
+      "input": "unrelated.test",
+      "expected_name": null
+    },
+    {
+      "input": "badexample.test",
+      "expected_name": null
+    },
+    {
+      "input": "example.test.other.test",
+      "expected_name": null
+    },
+    {
+      "input": "a.*.example.test",
+      "expected_name": null
+    }
+  ]
+}
