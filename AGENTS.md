@@ -23,7 +23,7 @@ Make service or desktop changes on a branch in the owning submodule repository. 
 Run from the platform root. With Python 3.12 in a virtual environment, use the dependencies and checks from [platform CI](.github/workflows/integration.yml).
 
 ```sh
-python -m pip install pytest pytest-asyncio \
+python -m pip install -c runtime-constraints.txt pytest pytest-asyncio \
   -r dataset_service/requirements.txt -r profile_checker/requirements.txt \
   -r profile_search/requirements.txt -r phone_search/requirements.txt
 pytest -q tests
