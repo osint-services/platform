@@ -39,7 +39,7 @@ The release checks use synthetic data. Passing them verifies the pinned desktop 
 ## Development setup
 
 - Docker Engine 28 or newer with Compose v2 or v5
-- Node.js 22 or newer to build the current desktop UI
+- Node.js 22.17 or newer to build the current desktop UI
 - Optional X bearer token for profile inspection and X map posts
 - Optional Twilio credentials for live phone lookup
 

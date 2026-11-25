@@ -93,6 +93,7 @@ with urlopen(Request(
     f"{base}/datasets/import", data=body, headers={"Content-Type": "application/json"}
 ), timeout=20) as response:
     assert response.status == 201
+    assert json.load(response)["imported"] == 600
 
 # An invalid radius prevents calls to external providers while testing query forwarding.
 try:
