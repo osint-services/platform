@@ -7,7 +7,7 @@ docker info
 docker compose version
 ```
 
-Check the server version in `docker info`. Docker Engine releases before 28 can expose ports published to localhost to peers on the same network segment. Install [Docker Engine for Debian](https://docs.docker.com/engine/install/debian/) or [Docker Engine for Ubuntu](https://docs.docker.com/engine/install/ubuntu/) if your distribution packages ship an older engine. Sign out and back in after changing Docker group membership. [Docker port publishing](https://docs.docker.com/engine/network/port-publishing/)
+Check the server version in `docker info`. Docker Engine releases before 28 can expose ports published to localhost to peers on the same network segment. Install [Docker Engine for Debian](https://docs.docker.com/engine/install/debian/) or [Docker Engine for Ubuntu](https://docs.docker.com/engine/install/ubuntu/) if your distribution packages ship an older engine. [Docker port publishing](https://docs.docker.com/engine/network/port-publishing/)
 
 Compose v5 support starts with platform v1.2.1. Installations using v1.2.0 require Compose v2.
 
@@ -18,10 +18,30 @@ Compose v5 support starts with platform v1.2.1. Installations using v1.2.0 requi
    sha256sum -c whoisit_1.2.1_amd64.deb.sha256
    sudo apt install ./whoisit_1.2.1_amd64.deb
    ```
-2. Open **whoisit** from the application menu or run `whoisit`. Whoisit checks Docker, imports any missing release images, and starts the Compose project. The first launch can take a few minutes while Docker loads the images. When the gateway and backend services respond, Whoisit shows **Services online**. If startup fails, the app displays the issue and a **Retry** button.
+2. Open **whoisit** from the application menu or run `whoisit`. Whoisit checks Docker, imports any missing release images, and starts the Compose project. The first launch can take a few minutes while Docker loads the images. When the gateway and backend services respond, Whoisit shows **Services online**. If startup fails, the app displays the issue and a **Retry** button. For Docker permission errors, see [Docker is running but Whoisit cannot connect](#docker-is-running-but-whoisit-cannot-connect).
 3. To use live X or Twilio results, enter credentials in **Integrations**. Imported datasets and dataset-backed maps work without these credentials. The gateway stays on `http://127.0.0.1:80`, and the backend continues running when you close Whoisit.
 
 The installer keeps the Compose files and archive in `/usr/lib/whoisit/resources/osint-platform`. Whoisit writes settings in `${XDG_CONFIG_HOME:-$HOME/.config}/whoisit/platform/.env`. Use this settings file to configure `CERTIFICATE_INVENTORY_DOMAINS` and other [optional platform values](../README.md#environment-values). Reopen Whoisit to apply file edits.
+
+## Docker is running but Whoisit cannot connect
+
+If `docker info` reports permission denied for `/var/run/docker.sock`, compare the groups in your current shell with those configured for your account.
+
+```sh
+id -nG
+id -nG "$USER"
+```
+
+If `docker` is missing from the second command and you administer the machine, follow [Docker's instructions for configuring access](https://docs.docker.com/engine/install/linux-postinstall/#manage-docker-as-a-non-root-user). Membership in the `docker` group grants root-level privileges.
+
+If only the second command lists `docker`, your current session still has the old group memberships. Signing out and back in refreshes the whole desktop session. If you have work running and need to stay signed in, quit Whoisit completely and run the following from your desktop terminal. The second command launches Whoisit as your account with refreshed group memberships after Docker access succeeds.
+
+```sh
+sudo -u "$USER" docker info --format '{{.ServerVersion}}' &&
+  sudo -u "$USER" --preserve-env=DISPLAY,WAYLAND_DISPLAY,XAUTHORITY,XDG_RUNTIME_DIR,DBUS_SESSION_BUS_ADDRESS /usr/bin/whoisit
+```
+
+Keep `-u "$USER"` in both commands. Plain `sudo whoisit` runs the app as root, which Electron rejects. After your next normal sign-in, open Whoisit from the application menu.
 
 ## Upgrade an existing installation
 
