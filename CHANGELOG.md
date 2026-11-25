@@ -4,7 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.1.0]
+
 ### Added
+- Added passive certificate inventory for configured domains with persistent snapshots and a desktop Certificates workspace.
 - Integrated `social_mapping` as a pinned submodule and Compose service with `/map/*` nginx routing, readiness checks, and persistent geocoder cache storage.
 - Added explicit geospatial dataset fields, additive migration, radius search, GeoJSON provenance, and associated phone metadata.
 - Added synthetic London, Arlington, and Portland entities plus credential-free import and end-to-end helper scripts.
@@ -12,6 +15,7 @@ All notable changes to this project will be documented in this file.
 - Added search-result **Go to map** handoffs for records with explicit coordinates, including safe phone-to-associated-entity navigation.
 
 ### Changed
+- Bound the default desktop gateway to IPv4 loopback.
 - Routed the native whoisit Map workspace and standalone Social Mapping client through the same canonical `/map/search` API.
 - Coordinate handoffs now bypass text geocoding, center the Map workspace on the evidence, and select the matching record when available.
 - Switched public submodule URLs to HTTPS so recursive clones do not require organization SSH keys.
