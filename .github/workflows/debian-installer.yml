@@ -85,4 +85,4 @@ jobs:
           gh release create "$GITHUB_REF_NAME" dist/whoisit_*.deb* \
             --repo "$GITHUB_REPOSITORY" --verify-tag \
             --title "Platform $GITHUB_REF_NAME" --generate-notes \
-            --notes "Debian/Ubuntu x86-64 installer. Requires a running local Docker daemon and Docker Compose v2. See the installer guide for setup and upgrade steps: https://github.com/$GITHUB_REPOSITORY/blob/$GITHUB_REF_NAME/docs/debian-installer.md"
+            --notes "Debian/Ubuntu x86-64 installer. Requires a running local Docker daemon and Docker Compose v2. See the [installer guide](https://github.com/$GITHUB_REPOSITORY/blob/$GITHUB_REF_NAME/docs/debian-installer.md) for setup and upgrade steps."

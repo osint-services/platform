@@ -1,6 +1,6 @@
 # Install OSINT Services on Debian or Ubuntu
 
-The amd64 package includes Whoisit, the release's Compose configuration, and prebuilt images for the five backend services and nginx. Install Docker Engine and the [Compose v2 plugin](https://docs.docker.com/compose/install/linux/) first. Use a local Docker context and make sure the account that runs Whoisit can access the daemon. Both of these commands should work from that account without `sudo`:
+The amd64 package includes Whoisit, the release's Compose configuration, and prebuilt images for the five backend services and nginx. Install Docker Engine and the [Compose v2 plugin](https://docs.docker.com/compose/install/linux/) first. Use a local Docker context and make sure the account that runs Whoisit can access the daemon. Both of these commands should work from that account without `sudo`.
 
 ```sh
 docker info
@@ -11,7 +11,7 @@ Verify that the Compose version starts with `v2`. On Ubuntu 24.04, the distribut
 
 ## Install and launch
 
-1. From [platform releases](https://github.com/osint-services/platform/releases), download the `whoisit_<version>_amd64.deb` and its `.sha256` file. Use the following commands from the download directory, substituting the published version:
+1. From [platform releases](https://github.com/osint-services/platform/releases), download the `whoisit_<version>_amd64.deb` and its `.sha256` file. Run these commands from the download directory and substitute the published version.
    ```sh
    sha256sum -c whoisit_1.2.0_amd64.deb.sha256
    sudo apt install ./whoisit_1.2.0_amd64.deb
@@ -25,7 +25,7 @@ The installer keeps the Compose files and archive in `/usr/lib/whoisit/resources
 
 Install the newer `.deb` with the same `apt install` command and reopen Whoisit. Use the same Docker context. The Compose project stays named `platform` and reuses Docker volumes `platform_dataset_data` and `platform_social_mapping_cache`. These hold imported datasets, certificate inventory, and the geocoder cache. Whoisit also keeps its existing desktop profile and settings.
 
-For a previous source-based installation, check the existing project with `docker compose ls` before the first unified launch:
+For a previous source-based installation, check the existing project with `docker compose ls` before the first unified launch.
 
 - If it is named `platform`, the installer picks up those volumes on the same daemon. To carry over settings, copy the checkout's `.env` into the per-user settings path before first launch. Create the settings directory with mode `700` and use `install -m 600` to copy the file.
 - If it uses a different project name or daemon, its volumes remain separate. Back up and migrate those volumes to the `platform` project before switching. Stop the old project if it still owns port 80.
@@ -33,7 +33,7 @@ For a previous source-based installation, check the existing project with `docke
 
 ## Build and publish
 
-From the platform root, check out the intended release commit and initialize its pinned submodules. On an amd64 Linux build host, install Docker with Compose v2 and Buildx, Node.js 22, `fakeroot`, and `dpkg`, then run:
+From the platform root, check out the intended release commit and initialize its pinned submodules. On an amd64 Linux build host, install Docker with Compose v2 and Buildx, Node.js 22, `fakeroot`, and `dpkg`. Run the build script from the platform root.
 
 ```sh
 git submodule update --init --recursive
