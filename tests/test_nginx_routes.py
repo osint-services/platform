@@ -24,6 +24,7 @@ def test_nginx_keeps_health_and_application_routes_separate():
 
     assert "location = /scan/healthz" in config
     assert "location /scan/" in config
+    assert "location = /focus/healthz" in config
     assert "location = /focus/readyz" in config
     assert "location /focus" in config
     assert "location = /phone_search/healthz" in config

@@ -1,0 +1,82 @@
+name: Platform Debian installer
+
+on:
+  push:
+    tags: ['v*.*.*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Package version (for example 1.2.0)
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: sudo apt-get update -qq && sudo apt-get install -y fakeroot
+      - name: Build the installer and backend images
+        env:
+          REQUESTED_VERSION: ${{ inputs.version }}
+        run: |
+          version=${REQUESTED_VERSION:-${GITHUB_REF_NAME#v}}
+          scripts/make-debian-installer.sh "$version" dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-amd64-deb
+          path: dist/whoisit_*.deb*
+          if-no-files-found: error
+
+  install:
+    needs: package
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [fresh, upgrade]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          name: linux-amd64-deb
+          path: dist
+      - run: sudo apt-get update -qq && sudo apt-get install -y xvfb xauth
+      - name: Install and launch the package
+        env:
+          TEST_MODE: ${{ matrix.mode }}
+        run: |
+          (cd dist && sha256sum -c ./*.sha256)
+          scripts/test-debian-installer.sh dist/*.deb "$TEST_MODE"
+
+  publish:
+    if: github.event_name == 'push' && github.ref_type == 'tag'
+    needs: install
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: linux-amd64-deb
+          path: dist
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/whoisit_*.deb* \
+            --repo "$GITHUB_REPOSITORY" --verify-tag \
+            --title "Platform $GITHUB_REF_NAME" --generate-notes \
+            --notes "Debian/Ubuntu x86-64 installer. Requires a running local Docker daemon and Docker Compose v2. See the installer guide for setup and upgrade steps: https://github.com/$GITHUB_REPOSITORY/blob/$GITHUB_REF_NAME/docs/debian-installer.md"

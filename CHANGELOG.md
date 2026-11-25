@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Added a single Debian/Ubuntu amd64 installer for Whoisit and the platform backend.
+
 ## [1.1.0]
 
 ### Added
