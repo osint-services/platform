@@ -40,4 +40,4 @@ git submodule update --init --recursive
 scripts/make-debian-installer.sh 1.2.0 dist
 ```
 
-The platform **Debian installer** workflow builds and smoke-tests an artifact when a PR updates the Whoisit or phone service pin. You can also run the workflow manually before tagging. A new platform tag such as `v1.2.0` builds and tests the package again, then publishes it and its checksum to platform releases. Use a new version for every published installer so Docker image references and Debian package versions advance together.
+The platform **Debian installer** workflow builds and smoke-tests an artifact when a PR updates the Whoisit or phone service pin. You can also run the workflow manually before tagging. The workflow publishes the first installer release, v1.2.0, after it passes checks on `main`. For later releases, push a new platform version tag. The tag workflow builds and tests the package, then publishes it and its checksum to platform releases. Use a new version for every published installer so Docker image references and Debian package versions advance together.

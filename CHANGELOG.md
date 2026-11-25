@@ -4,7 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.2.0]
+
 - Added a single Debian/Ubuntu amd64 installer for Whoisit and the platform backend.
+- Started the bundled Compose stack from Whoisit and showed service readiness in the desktop UI.
+- Kept desktop settings per user and reused the platform dataset and geocoder volumes during upgrades.
+- Kept the phone service available when Twilio credentials are unset.
 
 ## [1.1.0]
 
