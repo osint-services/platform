@@ -20,6 +20,12 @@ Docker Compose runs the five FastAPI services, nginx, a persistent `dataset_data
 
 Phone results can use this handoff only through an explicitly geolocated associated entity. Free-text locations and phone metadata never create a map destination.
 
+## Desktop network access
+
+Compose publishes nginx on `127.0.0.1:80`. The desktop client and local processes can reach the API at `http://127.0.0.1`, including dataset read, import and delete operations.
+
+For remote deployments, place an authenticated TLS gateway in front of this listener, authorize dataset reads and mutations, and restrict direct access to the backing services. Merely publishing port 80 on all interfaces provides no access control.
+
 ## Requirements and setup
 
 - Docker with Compose v2
