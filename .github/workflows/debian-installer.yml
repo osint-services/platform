@@ -7,6 +7,7 @@ on:
     tags: ['v*.*.*']
   pull_request:
     paths:
+      - 'CHANGELOG.md'
       - '.dockerignore'
       - '.github/workflows/debian-installer.yml'
       - 'Dockerfile'
@@ -24,7 +25,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: Package version (for example 1.2.0)
+        description: Candidate version newer than the upgrade baseline (for example 1.2.2)
         required: true
 
 permissions:
@@ -46,11 +47,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REQUESTED_VERSION: ${{ inputs.version }}
         run: |
-          if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then
-            version=1.2.1
-          elif [[ "$GITHUB_REF" == refs/heads/main && "$GITHUB_EVENT_NAME" == push ]]; then
+          if [[ "$GITHUB_EVENT_NAME" == pull_request || ( "$GITHUB_EVENT_NAME" == push && "$GITHUB_REF" == refs/heads/main ) ]]; then
             version=$(awk '/^## \[[0-9]+\.[0-9]+\.[0-9]+\]$/ {print substr($2, 2, length($2) - 2); exit}' CHANGELOG.md)
-            if gh release view "v$version" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            if [[ "$GITHUB_EVENT_NAME" == push ]] && gh release view "v$version" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
               exit 0
             fi
           else

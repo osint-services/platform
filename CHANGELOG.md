@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.2.2]
+
+- Reject unsupported map sources before contacting the geocoder.
+- Document Docker socket permissions and how to launch Whoisit with refreshed group membership.
+- Verify upgrades from the previous unified installer, including preservation of datasets, settings, and the geocoder cache.
+
 ## [1.2.1]
 
 - Updated Electron and Electron Forge, enabled renderer sandboxing, and opened external web links in the default browser.
