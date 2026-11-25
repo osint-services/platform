@@ -1,6 +1,7 @@
 """Offline feasibility check for the crt.sh JSON response shape."""
 import json
 import unittest
+from datetime import datetime
 from pathlib import Path
 
 FIXTURE = Path(__file__).resolve().parents[1] / "examples/certificate-inventory/contract.json"
@@ -18,6 +19,13 @@ def read_rows(rows):
 
 
 class CertificateProviderEvaluation(unittest.TestCase):
+    def test_invalid_refresh_preserves_populated_snapshot(self):
+        rows = [{"id": 42, "name_value": "example.test"}]
+        snapshot = read_rows(rows)
+        with self.assertRaises(ValueError):
+            snapshot = read_rows([{"id": 43, "name_value": "app.example.test"}, {}])
+        self.assertEqual(snapshot, ["example.test"])
+
     def test_refresh_scenarios(self):
         fixture = json.loads(FIXTURE.read_text())
         expected_names = {case["input"]: case["expected_name"] for case in fixture["cases"]}
@@ -43,6 +51,10 @@ class CertificateProviderEvaluation(unittest.TestCase):
                             ]}
                     self.assertEqual(outcome, step["expected_outcome"])
                     self.assertEqual(snapshot, step["expected_snapshot"])
+                    if "expected_age_seconds" in step:
+                        attempted = datetime.fromisoformat(step["at"].replace("Z", "+00:00"))
+                        completed = datetime.fromisoformat(snapshot["completed_at"].replace("Z", "+00:00"))
+                        self.assertEqual((attempted - completed).total_seconds(), step["expected_age_seconds"])
 
 
 if __name__ == "__main__":
