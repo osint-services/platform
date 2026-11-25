@@ -9,14 +9,14 @@ docker compose version
 
 Check the server version in `docker info`. Docker Engine releases before 28 can expose ports published to localhost to peers on the same network segment. Install [Docker Engine for Debian](https://docs.docker.com/engine/install/debian/) or [Docker Engine for Ubuntu](https://docs.docker.com/engine/install/ubuntu/) if your distribution packages ship an older engine. Sign out and back in after changing Docker group membership. [Docker port publishing](https://docs.docker.com/engine/network/port-publishing/)
 
-The v1.2.0 desktop package requires Compose v2. Support for v5 starts with the next package release.
+Compose v5 support starts with platform v1.2.1. Installations using v1.2.0 require Compose v2.
 
 ## Install and launch
 
 1. From [platform releases](https://github.com/osint-services/platform/releases), download the `whoisit_<version>_amd64.deb` and its `.sha256` file. Run these commands from the download directory and substitute the published version.
    ```sh
-   sha256sum -c whoisit_1.2.0_amd64.deb.sha256
-   sudo apt install ./whoisit_1.2.0_amd64.deb
+   sha256sum -c whoisit_1.2.1_amd64.deb.sha256
+   sudo apt install ./whoisit_1.2.1_amd64.deb
    ```
 2. Open **whoisit** from the application menu or run `whoisit`. Whoisit checks Docker, imports any missing release images, and starts the Compose project. The first launch can take a few minutes while Docker loads the images. When the gateway and backend services respond, Whoisit shows **Services online**. If startup fails, the app displays the issue and a **Retry** button.
 3. To use live X or Twilio results, enter credentials in **Integrations**. Imported datasets and dataset-backed maps work without these credentials. The gateway stays on `http://127.0.0.1:80`, and the backend continues running when you close Whoisit.
@@ -39,7 +39,7 @@ From the platform root, check out the intended release commit and initialize its
 
 ```sh
 git submodule update --init --recursive
-scripts/make-debian-installer.sh 1.2.0 dist
+scripts/make-debian-installer.sh 1.2.1 dist
 ```
 
-The platform **Debian installer** workflow builds and smoke-tests an artifact when a PR updates the Whoisit or phone service pin. You can also run the workflow manually before tagging. The workflow publishes the first installer release, v1.2.0, after it passes checks on `main`. For later releases, push a new platform version tag. The tag workflow builds and tests the package, then publishes it and its checksum to platform releases. Use a new version for every published installer so Docker image references and Debian package versions advance together.
+The platform **Debian installer** workflow builds and smoke-tests an artifact for installer-related pull requests. A manual run also produces a test artifact. To publish, add a new version heading to the changelog and merge it to `main`, or push a new platform version tag. The workflow publishes the package and checksum after the installer checks pass. Use a new version for every published installer so Docker image references and Debian package versions advance together.

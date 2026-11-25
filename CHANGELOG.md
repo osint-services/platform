@@ -4,9 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.2.1]
+
+- Updated Electron and Electron Forge, enabled renderer sandboxing, and opened external web links in the default browser.
 - Required Docker Engine 28 or newer for desktop-managed and source-script startup, with support for Compose v2 and v5.
 - Allowed dataset import requests up to 16 MiB and restored query parameters on the deprecated map route.
-- Updated the Python base image and removed the OAuthlib dependency from the bundled X API clients.
+- Updated the Python base image and backend dependencies. Profile Search and Social Mapping now call X API v2 directly, removing Tweepy and OAuthlib while retaining the existing bearer-token settings.
 - Ran installer checks on gateway, dependency, and packaging changes and exercised both supported Compose versions.
 
 ## [1.2.0]
