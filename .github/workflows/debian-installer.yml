@@ -36,6 +36,10 @@ jobs:
     outputs:
       version: ${{ steps.release.outputs.version }}
     steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
       - name: Select the package version
         id: release
         env:
@@ -45,7 +49,7 @@ jobs:
           if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then
             version=1.2.1
           elif [[ "$GITHUB_REF" == refs/heads/main && "$GITHUB_EVENT_NAME" == push ]]; then
-            version=1.2.0
+            version=$(awk '/^## \[[0-9]+\.[0-9]+\.[0-9]+\]$/ {print substr($2, 2, length($2) - 2); exit}' CHANGELOG.md)
             if gh release view "v$version" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
               exit 0
             fi
@@ -57,11 +61,6 @@ jobs:
             exit 2
           fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
-      - uses: actions/checkout@v4
-        if: steps.release.outputs.version != ''
-        with:
-          submodules: recursive
-          persist-credentials: false
       - uses: actions/setup-node@v4
         if: steps.release.outputs.version != ''
         with:
