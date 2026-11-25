@@ -5,6 +5,7 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException, Query, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 
+from .certificate_inventory import inventory_router
 from .models import (
     DatasetImportRequest,
     DatasetImportResult,
@@ -150,6 +151,7 @@ def create_app(database_path: str | Path | None = None) -> FastAPI:
     repository = DatasetRepository(path)
     app = FastAPI(title="OSINT Dataset Service")
     app.state.repository = repository
+    app.include_router(inventory_router(path, os.getenv("CERTIFICATE_INVENTORY_DOMAINS", "")))
 
     app.add_middleware(
         CORSMiddleware,
