@@ -2,6 +2,21 @@
 
 The platform combines public-data services, user-supplied datasets, and evidence-oriented mapping behind one nginx endpoint and the [`whoisit`](https://github.com/osint-services/whoisit) desktop workspace.
 
+## Install the current release
+
+1. Install Git, Docker, and Docker Compose v2. Clone the platform at v1.1.0 with its pinned submodules, then start the backend:
+
+   ```bash
+   git clone --branch v1.1.0 --recurse-submodules https://github.com/osint-services/platform.git
+   cd platform
+   cp .env.example .env
+   docker compose up --build -d
+   ```
+
+2. On Debian or Ubuntu x86-64, [download Whoisit v1.0.0](https://github.com/osint-services/whoisit/releases/download/v1.0.0/whoisit_1.0.0_amd64.deb), install it with `sudo apt install ./whoisit_1.0.0_amd64.deb`, and launch Whoisit. The desktop package connects to the running backend at `http://127.0.0.1:80`. Manage the Compose stack and its settings from the platform checkout.
+
+3. To use **Certificates**, set `CERTIFICATE_INVENTORY_DOMAINS` in the platform `.env` for domains whose ownership you have verified. Recreate the dataset service with `docker compose up -d dataset_service`. See the [certificate inventory setup guide](https://github.com/osint-services/platform/blob/v1.1.0/docs/certificate-inventory.md#using-the-inventory).
+
 ## Architecture
 
 ```text
@@ -32,7 +47,7 @@ Open **Certificates** in the pinned desktop app. Select a configured domain and 
 
 The release checks use synthetic data. Passing them verifies the pinned desktop build, gateway routes and snapshot behavior; it does not establish live crt.sh coverage or availability.
 
-## Requirements and setup
+## Development setup
 
 - Docker with Compose v2
 - Node.js 22 or newer to build the current desktop UI
