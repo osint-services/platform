@@ -44,6 +44,7 @@ services:
         APP_DIR: dataset_service
     environment:
       - DATASET_DB_PATH=/data/datasets.db
+      - CERTIFICATE_INVENTORY_DOMAINS=${CERTIFICATE_INVENTORY_DOMAINS:-}
     command: uvicorn dataset_service.server:app --host 0.0.0.0 --port 8000
     volumes:
       - dataset_data:/data
