@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run on a disposable amd64 desktop test machine with Docker Compose v2 and Xvfb.
+# Run on a disposable amd64 desktop test machine with Docker Compose v2 or v5 and Xvfb.
 set -euo pipefail
 
 package=$(realpath "${1:?Usage: scripts/test-debian-installer.sh PACKAGE [fresh|upgrade]}")
@@ -76,6 +76,34 @@ if [[ "$mode" == upgrade ]]; then
     'import json, sys; assert json.load(sys.stdin)["domains"] == ["example.test"]'
 else
   (cd "$root" && python3 scripts/test_social_mapping_e2e.py "$base")
+  python3 - "$base" <<'PYTHON'
+import json
+import sys
+from urllib.error import HTTPError
+from urllib.request import Request, urlopen
+
+base = sys.argv[1]
+body = json.dumps({
+    "name": "Large synthetic import",
+    "record_type": "entity",
+    "rows": [{"username": f"synthetic_{i}", "bio": "sample " * 300} for i in range(600)],
+}).encode()
+assert 1024 * 1024 < len(body) < 16 * 1024 * 1024
+with urlopen(Request(
+    f"{base}/datasets/import", data=body, headers={"Content-Type": "application/json"}
+), timeout=20) as response:
+    assert response.status == 201
+    assert json.load(response)["imported"] == 600
+
+# An invalid radius prevents calls to external providers while testing query forwarding.
+try:
+    urlopen(f"{base}/search/tweets?city=London&distance=-1", timeout=10)
+except HTTPError as error:
+    assert error.code == 422
+    assert [item["loc"] for item in json.load(error)["detail"]] == [["query", "distance"]]
+else:
+    raise AssertionError("The legacy map route accepted an invalid distance.")
+PYTHON
 fi
 
 echo "Verified $mode installation of Whoisit $version and the loopback gateway."

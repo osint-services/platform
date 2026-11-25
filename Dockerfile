@@ -1,5 +1,5 @@
 # Use an official Python image
-FROM python:3.10-slim
+FROM python:3.12-slim
 
 # Install Python dependencies and set working directory
 WORKDIR /app
@@ -11,12 +11,14 @@ COPY ./phone_search /app/phone_search
 COPY ./dataset_service /app/dataset_service
 COPY ./social_mapping /app/social_mapping_repo
 
-# Install the selected service dependencies
+# Install the selected service dependencies and apply shared security constraints.
+COPY runtime-constraints.txt /app/runtime-constraints.txt
 ARG APP_DIR=profile_checker
-RUN if [ "$APP_DIR" = "social_mapping" ]; then \
-      pip install --no-cache-dir -r /app/social_mapping_repo/requirements.txt; \
+RUN pip install --no-cache-dir --upgrade -c /app/runtime-constraints.txt pip setuptools && \
+    if [ "$APP_DIR" = "social_mapping" ]; then \
+      pip install --no-cache-dir -c /app/runtime-constraints.txt -r /app/social_mapping_repo/requirements.txt; \
     else \
-      pip install --no-cache-dir -r /app/${APP_DIR}/requirements.txt; \
+      pip install --no-cache-dir -c /app/runtime-constraints.txt -r /app/${APP_DIR}/requirements.txt; \
     fi
 
 ENV PYTHONUNBUFFERED=1
