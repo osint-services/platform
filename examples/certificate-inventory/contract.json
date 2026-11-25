@@ -1,0 +1,121 @@
+{
+  "observation": {
+    "configured_domain": "example.test",
+    "name": "example.test",
+    "source": "synthetic",
+    "certificate_id": "fixture-1",
+    "not_before": "2026-01-01T00:00:00Z",
+    "not_after": "2026-04-01T00:00:00Z",
+    "logged_at": null,
+    "retrieved_at": "2026-02-01T12:00:00Z"
+  },
+  "cases": [
+    {
+      "input": "example.test",
+      "expected_name": "example.test"
+    },
+    {
+      "input": "APP.Example.Test.",
+      "expected_name": "app.example.test"
+    },
+    {
+      "input": "*.example.test",
+      "expected_name": "*.example.test"
+    },
+    {
+      "input": "unrelated.test",
+      "expected_name": null
+    },
+    {
+      "input": "badexample.test",
+      "expected_name": null
+    },
+    {
+      "input": "example.test.other.test",
+      "expected_name": null
+    },
+    {
+      "input": "a.*.example.test",
+      "expected_name": null
+    }
+  ],
+  "refresh_scenarios": [
+    {
+      "name": "mixed_names",
+      "steps": [
+        {
+          "at": "2026-02-02T12:00:00Z",
+          "response": {
+            "certificates": [
+              {
+                "names": [
+                  "APP.Example.Test.",
+                  "a.*.example.test",
+                  "unrelated.test"
+                ]
+              }
+            ]
+          },
+          "expected_outcome": "success",
+          "expected_snapshot": {
+            "completed_at": "2026-02-02T12:00:00Z",
+            "names": [
+              "app.example.test"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "empty_success_then_timeout",
+      "steps": [
+        {
+          "at": "2026-02-02T12:00:00Z",
+          "response": {
+            "certificates": []
+          },
+          "expected_outcome": "success",
+          "expected_snapshot": {
+            "completed_at": "2026-02-02T12:00:00Z",
+            "names": []
+          }
+        },
+        {
+          "at": "2026-02-03T12:00:00Z",
+          "error": "timeout",
+          "expected_outcome": "provider_failure",
+          "expected_snapshot": {
+            "completed_at": "2026-02-02T12:00:00Z",
+            "names": []
+          },
+          "expected_age_seconds": 86400
+        }
+      ]
+    },
+    {
+      "name": "invalid_response_after_valid_record",
+      "steps": [
+        {
+          "at": "2026-02-02T12:00:00Z",
+          "response": {
+            "certificates": [
+              {
+                "names": [
+                  "example.test"
+                ]
+              },
+              {
+                "certificate_id": null,
+                "names": [
+                  "other.example.test"
+                ]
+              }
+            ]
+          },
+          "expected_outcome": "invalid_response",
+          "expected_snapshot": null
+        }
+      ]
+    }
+  ]
+}
