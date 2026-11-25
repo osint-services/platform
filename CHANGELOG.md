@@ -9,32 +9,58 @@ All notable changes to this project will be documented in this file.
 - Added explicit geospatial dataset fields, additive migration, radius search, GeoJSON provenance, and associated phone metadata.
 - Added synthetic London, Arlington, and Portland entities plus credential-free import and end-to-end helper scripts.
 - Added a platform CI path that validates tests, Compose configuration, and the complete synthetic London map flow.
-- Added a sparse entity model that associates optional profile and phone identifiers while preserving their type-specific metadata.
-- Added a persistent SQLite dataset service for mapped profile and phone imports.
-- Added CSV, JSON, JSONL, and NDJSON parsing, previews, automatic field suggestions, per-row validation, provenance, and raw-record retention.
-- Added combined live and imported-source searching, local search history, raw JSON inspection, and dataset management to the Electron UI.
-- Added an Integrations workspace for X/Tweepy, Twilio Lookup, and local dataset connection status with protected credential replacement.
-- Expanded username result cards with public validation evidence, direct profile links, dataset provenance, observation time, and confidence.
-- Added fictional profile CSV and phone JSONL datasets for testing imports, mapping, local search, and rich result rendering.
-- Expanded regression coverage for dataset import, fuzzy profile search, normalized phone search, deletion, health endpoints, and client-side parsers.
 - Added search-result **Go to map** handoffs for records with explicit coordinates, including safe phone-to-associated-entity navigation.
 
 ### Changed
 - Routed the native whoisit Map workspace and standalone Social Mapping client through the same canonical `/map/search` API.
 - Coordinate handoffs now bypass text geocoding, center the Map workspace on the evidence, and select the matching record when available.
 - Switched public submodule URLs to HTTPS so recursive clones do not require organization SSH keys.
-- Replaced separate profile and phone dataset ingestion with one entity mapping pipeline; legacy API imports remain compatible and existing SQLite databases migrate in place.
-- Unified username and phone lookup into one Search workspace with conservative auto-detection, explicit Profile and Phone modes, and source filters that control which APIs and datasets are queried.
-- Reworked the Electron interface into cohesive Search, Datasets, Integrations, and History workspaces with type-specific master/detail results.
-- Isolated live-provider failures so other sources can still return results and errors remain in the correct search workspace.
-- Expanded profile and phone detail views with provider metadata, provenance, freshness, confidence, metrics, and raw source records.
-- Added the dataset service to Docker Compose, nginx routing, persistent storage, and desktop readiness probes.
+
+## 2026-07-17
+
+### Added
+
+- Sparse entities that can contain a profile identifier, a phone identifier, or both, with associations visible from either search.
+- Persistent SQLite-backed profile and phone datasets with mapped imports and local search.
+- CSV, JSON, JSONL, and NDJSON parsing with automatic field suggestions and previews.
+- Per-row validation, rejected-row reporting, provenance, observation time, confidence, and raw source retention.
+- Search history and combined live/local results in the Electron application.
+- Integration status and credential management for X/Tweepy and Twilio Lookup.
+- Rich username result cards that remain informative when paid X profile inspection is unavailable.
+- Fictional sample profile and phone files for testing the dataset workflow without real personal data.
+- Regression coverage for dataset imports and deletion, fuzzy profile and normalized phone search, health endpoints, and renderer parsers.
+
+### Changed
+
+- Replaced the desktop record-type selector with one entity ingestion and field-mapping pipeline.
+- Added an in-place SQLite schema migration while retaining legacy profile and phone import compatibility.
+- Unified username and phone lookup into a Search workspace with Auto, Profile, and Phone modes plus source filters that avoid unnecessary provider calls.
+- Reorganized the desktop application into Search, Datasets, Integrations, and History workspaces.
+- Expanded profile and caller details with provider metadata, provenance, freshness, confidence, metrics, and raw JSON inspection.
 - Increased the desktop window size and stopped opening DevTools in normal runs.
-- Kept stored provider secrets out of the renderer and applied credential changes through atomic, owner-only `.env` updates.
-- Fixed packaged Electron builds so they locate the parent platform configuration and report the real integration state.
-- Replaced opaque profile-inspection 500 errors with actionable X provider responses for depleted credits, rate limits, invalid access, and missing profiles.
-- Switched nginx service routing to Docker's runtime DNS resolver so container recreation cannot silently send requests to reassigned service IPs.
+- Kept API failures scoped to their own source and search workflow.
+- Added dataset routing, persistence, and readiness checks to the deployed architecture.
+- Restricted saved provider credentials to the operating-system user and prevented existing secrets from being returned to the UI.
+- Fixed platform-root discovery in packaged Electron layouts so integration settings use the correct `.env` file.
+- Mapped X API failures to explicit profile-inspection responses, including `402` for depleted credits and `429` for rate limits.
+- Made nginx resolve Compose service names at request time, preventing cross-service 404s after containers receive new IP addresses.
 
 ### Documentation
-- Updated the platform, environment, desktop UI, dataset service, and organization profile documentation for the current architecture.
-- Added [2026-07-17 release notes](CHANGELOG-2026-07-17.md).
+
+- Rewrote the root architecture and setup guide.
+- Expanded environment-variable guidance.
+- Rewrote the desktop UI guide and added a dataset service guide.
+- Updated the OSINT Services organization profile README.
+
+## 2026-07-16
+
+### Added
+- Added `/healthz` endpoints to the profile checker, profile search, and phone lookup services.
+- Added a smoke test covering the health endpoints for the platform services.
+
+### Changed
+- Parallelized the username scan flow in the profile checker with a bounded semaphore to reduce overall request latency.
+- Removed the obsolete `version` field from the Compose file and kept the deployment configuration in sync with newer Docker Compose behavior.
+
+### Documentation
+- Expanded the root README with notes about health checks and the recent hardening work.
