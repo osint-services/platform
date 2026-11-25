@@ -20,7 +20,7 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: >-
-          pip install pytest pytest-asyncio
+          pip install -c runtime-constraints.txt pytest pytest-asyncio
           -r dataset_service/requirements.txt
           -r profile_checker/requirements.txt
           -r profile_search/requirements.txt

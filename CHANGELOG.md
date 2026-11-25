@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 
 - Required Docker Engine 28 or newer for desktop-managed and source-script startup, with support for Compose v2 and v5.
 - Allowed dataset import requests up to 16 MiB and restored query parameters on the deprecated map route.
-- Updated the Python base image and backend dependencies.
+- Updated the Python base image and removed the OAuthlib dependency from the bundled X API clients.
 - Ran installer checks on gateway, dependency, and packaging changes and exercised both supported Compose versions.
 
 ## [1.2.0]
