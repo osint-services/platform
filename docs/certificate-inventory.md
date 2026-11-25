@@ -6,6 +6,10 @@ Compare lowercase ASCII DNS names in A-label form after removing one trailing ro
 
 Each observation records the configured domain, normalized certificate name, source identifier, source-specific certificate ID, certificate validity start and end, log timestamp and retrieval timestamp. Use UTC RFC 3339 timestamps. Retrieval time is required. Preserve missing upstream timestamps as null. A validity boundary is never a substitute for log time. Deduplicate by configured domain, source, certificate ID and normalized name.
 
-A completed empty lookup, provider failure and invalid response are distinct outcomes. On failure retain the last successful snapshot and expose its age. Treat an absent name as absent from that snapshot only.
+## Refresh outcomes
 
-See [synthetic acceptance cases](../examples/certificate-inventory/contract.json). Each case overrides the example observation's name and states the expected scope decision.
+Validate the complete provider response before publishing. Skip an individual malformed or out-of-scope name in an otherwise valid certificate record and continue processing its other names. A successful response with zero accepted names publishes an empty snapshot. An unreadable payload, unexpected response structure, or certificate record missing its required identifier invalidates the whole refresh, even if earlier records were valid. A timeout or upstream outage is a provider failure.
+
+Publish each successful snapshot atomically for its configured domain and source. Store a snapshot-level UTC RFC 3339 `completed_at` even when the observations list is empty. On provider failure or invalid response, record the attempt outcome separately and retain the previous successful snapshot, including its completion time. Compute its age from that time. If no successful snapshot exists, report its age as unavailable.
+
+The [synthetic fixtures](../examples/certificate-inventory/contract.json) include individual name cases and ordered refresh scenarios. In each scenario, certificate IDs and timestamps other than snapshot completion inherit the example observation unless overridden. Expected snapshots list normalized names for brevity.
