@@ -12,8 +12,21 @@ unset TWEEPY_BEARER_TOKEN TWILIO_ACCOUNT_SID TWILIO_AUTH_TOKEN
 mkdir -p "$XDG_CONFIG_HOME" "$XDG_CACHE_HOME"
 
 app_pid=
+stop_whoisit() {
+  if [[ -z "$app_pid" ]]; then return; fi
+  kill -- "-$app_pid" 2>/dev/null || true
+  wait "$app_pid" 2>/dev/null || true
+  # The launcher may exit before Electron's child processes have stopped.
+  for attempt in {1..30}; do
+    if ! kill -0 -- "-$app_pid" 2>/dev/null; then break; fi
+    sleep 0.1
+  done
+  kill -KILL -- "-$app_pid" 2>/dev/null || true
+  app_pid=
+}
+
 cleanup() {
-  if [[ -n "$app_pid" ]]; then kill -- "-$app_pid" 2>/dev/null || true; fi
+  stop_whoisit
   rm -rf -- "$scratch"
 }
 trap cleanup EXIT
@@ -50,9 +63,7 @@ if [[ "$mode" == upgrade ]]; then
   (cd "$root" && python3 scripts/test_social_mapping_e2e.py "$base")
   curl -fsS "$base/datasets" > "$scratch/previous-datasets.json"
   "${compose[@]}" exec -T social_mapping sh -c 'printf retained > /data/installer-smoke'
-  kill -- "-$app_pid"
-  wait "$app_pid" || true
-  app_pid=
+  stop_whoisit
 elif [[ "$mode" != fresh ]]; then
   echo "Expected fresh or upgrade." >&2
   exit 2
