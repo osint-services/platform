@@ -85,7 +85,9 @@ services:
       - platform_net
 
   proxy:
-    image: nginx:stable-alpine
+    build:
+      context: .
+      dockerfile: Dockerfile.proxy
     depends_on:
       - profile_checker
       - profile_search

@@ -12,8 +12,21 @@ unset TWEEPY_BEARER_TOKEN TWILIO_ACCOUNT_SID TWILIO_AUTH_TOKEN
 mkdir -p "$XDG_CONFIG_HOME" "$XDG_CACHE_HOME"
 
 app_pid=
+stop_whoisit() {
+  if [[ -z "$app_pid" ]]; then return; fi
+  kill -- "-$app_pid" 2>/dev/null || true
+  wait "$app_pid" 2>/dev/null || true
+  # The launcher may exit before Electron's child processes have stopped.
+  for attempt in {1..30}; do
+    if ! kill -0 -- "-$app_pid" 2>/dev/null; then break; fi
+    sleep 0.1
+  done
+  kill -KILL -- "-$app_pid" 2>/dev/null || true
+  app_pid=
+}
+
 cleanup() {
-  if [[ -n "$app_pid" ]]; then kill -- "-$app_pid" 2>/dev/null || true; fi
+  stop_whoisit
   rm -rf -- "$scratch"
 }
 trap cleanup EXIT
@@ -34,7 +47,7 @@ launch_whoisit() {
 }
 
 if [[ "$mode" == upgrade ]]; then
-  previous=1.2.1
+  previous=1.2.2
   previous_package="whoisit_${previous}_amd64.deb"
   previous_release="https://github.com/osint-services/platform/releases/download/v$previous"
   curl -fsSL --retry 3 -o "$scratch/$previous_package" "$previous_release/$previous_package"
@@ -50,9 +63,7 @@ if [[ "$mode" == upgrade ]]; then
   (cd "$root" && python3 scripts/test_social_mapping_e2e.py "$base")
   curl -fsS "$base/datasets" > "$scratch/previous-datasets.json"
   "${compose[@]}" exec -T social_mapping sh -c 'printf retained > /data/installer-smoke'
-  kill -- "-$app_pid"
-  wait "$app_pid" || true
-  app_pid=
+  stop_whoisit
 elif [[ "$mode" != fresh ]]; then
   echo "Expected fresh or upgrade." >&2
   exit 2
@@ -72,6 +83,22 @@ launch_whoisit
 test "$("${compose[@]}" port proxy 80)" = '127.0.0.1:80'
 test "$(stat -c %a "$settings")" = 600
 docker image inspect "osint-services/dataset_service:$version" >/dev/null
+
+for service in dataset_service phone_search profile_checker profile_search social_mapping; do
+  "${compose[@]}" exec -T "$service" sh -eu -c '
+    dpkg --compare-versions "$(dpkg-query -W -f="\${Version}" libzstd1)" ge 1.5.7+dfsg-1+deb13u1
+    for package in login.defs passwd; do
+      dpkg --compare-versions "$(dpkg-query -W -f="\${Version}" "$package")" ge 1:4.17.4-2+deb13u1
+    done
+    python -c "from importlib.util import find_spec; assert find_spec(\"pip\") is None"
+  '
+done
+"${compose[@]}" exec -T proxy sh -eu -c '
+  expat=$(apk info -v libexpat | sed "s/^libexpat-//")
+  zlib=$(apk info -v zlib | sed "s/^zlib-//")
+  test "$(apk version -t "$expat" 2.11.0-r0)" != "<"
+  test "$(apk version -t "$zlib" 1.4-r0)" != "<"
+'
 test "$(curl -sS -o "$scratch/phone-response.json" -w '%{http_code}' \
   "$base/phone_search?phone_number=%2B12025550101")" = 503
 python3 -c 'import json, sys; assert json.load(sys.stdin)["detail"] == "Twilio Lookup is not configured."' \

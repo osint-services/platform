@@ -19,13 +19,9 @@ cp nginx.conf "$assets/"
 
 export DOCKER_DEFAULT_PLATFORM=linux/amd64
 compose=(docker compose --project-name platform --file docker-compose.yml)
-proxy_image=$(
-  "${compose[@]}" config --no-interpolate --no-path-resolution --no-normalize --format json |
-    python3 scripts/render-installer-compose.py "$version" "$assets/compose.yaml" "$stage/build.yaml"
-)
+"${compose[@]}" config --no-interpolate --no-path-resolution --no-normalize --format json |
+  python3 scripts/render-installer-compose.py "$version" "$assets/compose.yaml" "$stage/build.yaml"
 "${compose[@]}" --file "$stage/build.yaml" build --pull
-docker pull --platform linux/amd64 "$proxy_image"
-docker image tag "$proxy_image" "osint-services/proxy:$version"
 
 bundle=(docker compose --project-name platform --env-file /dev/null --file "$assets/compose.yaml")
 "${bundle[@]}" config --quiet

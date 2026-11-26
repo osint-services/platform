@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.2.3]
+
+- Apply Debian and Alpine security updates to the bundled backend and gateway images.
+- Remove pip and its vendored code from the backend runtime images after installing service dependencies.
+- Update the bundled component pins and verify an in-place upgrade from v1.2.2.
+
 ## [1.2.2]
 
 - Reject unsupported map sources before contacting the geocoder.
