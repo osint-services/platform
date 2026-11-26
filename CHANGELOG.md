@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.2.4]
+
+- Audit the desktop and standalone client lockfiles and scan the six bundled container images before publishing.
+- Attach dependency audit reports to installer CI and verify an in-place upgrade from v1.2.3.
+
 ## [1.2.3]
 
 - Apply Debian and Alpine security updates to the bundled backend and gateway images.

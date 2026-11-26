@@ -15,8 +15,8 @@ Compose v5 support starts with platform v1.2.1. Installations using v1.2.0 requi
 
 1. From [platform releases](https://github.com/osint-services/platform/releases), download the `whoisit_<version>_amd64.deb` and its `.sha256` file. Run these commands from the download directory and substitute the published version.
    ```sh
-   sha256sum -c whoisit_1.2.3_amd64.deb.sha256
-   sudo apt install ./whoisit_1.2.3_amd64.deb
+   sha256sum -c whoisit_1.2.4_amd64.deb.sha256
+   sudo apt install ./whoisit_1.2.4_amd64.deb
    ```
 2. Open **whoisit** from the application menu or run `whoisit`. Whoisit checks Docker, imports any missing release images, and starts the Compose project. The first launch can take a few minutes while Docker loads the images. When the gateway and backend services respond, Whoisit shows **Services online**. If startup fails, the app displays the issue and a **Retry** button. For Docker permission errors, see [Docker is running but Whoisit cannot connect](#docker-is-running-but-whoisit-cannot-connect).
 3. To use live X or Twilio results, enter credentials in **Integrations**. Imported datasets and dataset-backed maps work without these credentials. The gateway stays on `http://127.0.0.1:80`, and the backend continues running when you close Whoisit.
@@ -59,7 +59,9 @@ From the platform root, check out the intended release commit and initialize its
 
 ```sh
 git submodule update --init --recursive
-scripts/make-debian-installer.sh 1.2.3 dist
+scripts/make-debian-installer.sh 1.2.4 dist
 ```
 
 The platform **Debian installer** workflow builds and smoke-tests an artifact for installer-related pull requests. A manual run also produces a test artifact. To publish, add a new version heading to the changelog and merge it to `main`, or push a new platform version tag. The workflow publishes the package and checksum after the installer checks pass. Use the Platform release for changes to the unified installer, including desktop and backend changes after their submodule pins are updated. Documentation and CI maintenance alone can ship on `main`. Use a new version for every published installer so Docker image references and Debian package versions advance together.
+
+Installer CI audits the Whoisit and Social Mapping JavaScript lockfiles, including development dependencies. It also uses Trivy on the images extracted from the checksummed installer to scan system and application packages. Publication requires successful scans and install tests. High and critical JavaScript advisories and high and critical image advisories with a published fix block publication. The **dependency-scan-reports** workflow artifact retains the full scan results, including image findings without fixes.
