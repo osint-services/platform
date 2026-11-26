@@ -5,7 +5,6 @@ from pathlib import Path
 
 version, bundle_file, build_file = sys.argv[1:]
 model = json.load(sys.stdin)
-proxy_image = model["services"]["proxy"]["image"]
 build_targets = {}
 for name, service in model["services"].items():
     image = f"osint-services/{name}:{version}"
@@ -17,4 +16,3 @@ for name, service in model["services"].items():
 
 Path(bundle_file).write_text(json.dumps(model, indent=2) + "\n", encoding="utf-8")
 Path(build_file).write_text(json.dumps({"services": build_targets}) + "\n", encoding="utf-8")
-print(proxy_image)

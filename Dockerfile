@@ -1,6 +1,10 @@
 # Use an official Python image
 FROM python:3.12-slim
 
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends --only-upgrade libzstd1 login.defs passwd && \
+    rm -rf /var/lib/apt/lists/*
+
 # Install Python dependencies and set working directory
 WORKDIR /app
 
@@ -19,7 +23,8 @@ RUN pip install --no-cache-dir --upgrade -c /app/runtime-constraints.txt pip set
       pip install --no-cache-dir -c /app/runtime-constraints.txt -r /app/social_mapping_repo/requirements.txt; \
     else \
       pip install --no-cache-dir -c /app/runtime-constraints.txt -r /app/${APP_DIR}/requirements.txt; \
-    fi
+    fi && \
+    python -m pip uninstall --yes pip
 
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app:/app/social_mapping_repo

@@ -11,6 +11,7 @@ on:
       - '.dockerignore'
       - '.github/workflows/debian-installer.yml'
       - 'Dockerfile'
+      - 'Dockerfile.proxy'
       - 'docker-compose.yml'
       - 'nginx.conf'
       - 'runtime-constraints.txt'
@@ -25,7 +26,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: Candidate version newer than the upgrade baseline (for example 1.2.2)
+        description: Candidate version newer than the upgrade baseline (for example 1.2.3)
         required: true
 
 permissions:
