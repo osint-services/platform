@@ -47,7 +47,7 @@ launch_whoisit() {
 }
 
 if [[ "$mode" == upgrade ]]; then
-  previous=1.2.2
+  previous=1.2.3
   previous_package="whoisit_${previous}_amd64.deb"
   previous_release="https://github.com/osint-services/platform/releases/download/v$previous"
   curl -fsSL --retry 3 -o "$scratch/$previous_package" "$previous_release/$previous_package"

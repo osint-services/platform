@@ -26,7 +26,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: Candidate version newer than the upgrade baseline (for example 1.2.3)
+        description: Candidate version newer than the upgrade baseline (for example 1.2.4)
         required: true
 
 permissions:
@@ -113,9 +113,61 @@ jobs:
           (cd dist && sha256sum -c ./*.sha256)
           scripts/test-debian-installer.sh dist/*.deb "$TEST_MODE"
 
+  security:
+    needs: package
+    if: needs.package.outputs.version != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/download-artifact@v4
+        with:
+          name: linux-amd64-deb
+          path: dist
+      - name: Verify package checksum
+        run: (cd dist && sha256sum -c ./*.sha256)
+      - name: Install checksum-pinned Trivy
+        run: |
+          mkdir -p "$RUNNER_TEMP/trivy" "$RUNNER_TEMP/security"
+          curl --fail --silent --show-error --location --retry 3 \
+            https://github.com/aquasecurity/trivy/releases/download/v0.76.2/trivy_0.76.2_Linux-64bit.tar.gz \
+            -o "$RUNNER_TEMP/trivy.tar.gz"
+          echo "bc0fc726e017b8927a62b2d3531d7a84ee01769daf5c99ed866dced54089fdbf  $RUNNER_TEMP/trivy.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/trivy.tar.gz" -C "$RUNNER_TEMP/trivy" trivy
+          echo "$RUNNER_TEMP/trivy" >> "$GITHUB_PATH"
+      - name: Scan all packaged OS and application dependencies
+        run: scripts/scan-installer-images.sh dist/*.deb "$RUNNER_TEMP/security"
+      - name: Audit the Whoisit lockfile
+        if: ${{ !cancelled() }}
+        working-directory: whoisit
+        run: |
+          mkdir -p "$RUNNER_TEMP/security"
+          npm audit --include=dev --audit-level=high --json > "$RUNNER_TEMP/security/whoisit.npm.json"
+      - name: Audit the standalone Social Mapping lockfile
+        if: ${{ !cancelled() }}
+        working-directory: social_mapping
+        run: |
+          mkdir -p "$RUNNER_TEMP/security"
+          pnpm audit --audit-level high --json > "$RUNNER_TEMP/security/social-mapping.pnpm.json"
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: dependency-scan-reports
+          path: ${{ runner.temp }}/security/*.json
+          if-no-files-found: error
+
   publish:
     if: github.event_name == 'push'
-    needs: [package, install]
+    needs: [package, install, security]
     concurrency: publish-platform-v${{ needs.package.outputs.version }}
     runs-on: ubuntu-24.04
     permissions:
